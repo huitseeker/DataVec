@@ -16,7 +16,12 @@
 
 package org.datavec.spark.transform;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NonNull;
+
 import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.api.java.function.Function2;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.analysis.DataAnalysis;
 import org.datavec.api.transform.analysis.SequenceDataAnalysis;
@@ -609,9 +614,21 @@ public class AnalyzeSpark {
         return data.takeSample(false,count);
     }
 
+    @Data @AllArgsConstructor
+    class Aggregator<T, U>{
+        @NonNull private final U initial;
+        @NonNull private final Function2<U, T, U> adder;
+        @NonNull private final Function2<U, U, U> merger;
+    }
 
+    /*
+    private static Aggregator<ColumnQuality, ColumnType> aggregationResources(ColumnMetaData meta) {
+        switch(meta.getColumnType()){
+        case String:
 
-
+        }
+    }
+    */
 
     private static ColumnQuality analyze(ColumnMetaData meta, JavaRDD<Writable> ithColumn){
 

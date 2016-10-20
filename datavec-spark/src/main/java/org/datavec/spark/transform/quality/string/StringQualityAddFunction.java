@@ -16,6 +16,7 @@
 
 package org.datavec.spark.transform.quality.string;
 
+import com.clearspring.analytics.stream.cardinality.HyperLogLogPlus;
 import lombok.AllArgsConstructor;
 import org.apache.spark.api.java.function.Function2;
 import org.datavec.api.writable.NullWritable;
@@ -42,6 +43,7 @@ public class StringQualityAddFunction implements Function2<StringQuality,Writabl
         long numerical = v1.getCountNumerical();
         long word = v1.getCountWordCharacter();
         long whitespaceOnly = v1.getCountWhitespace();
+        HyperLogLogPlus hll = v1.getHll();
 
         String str = writable.toString();
 
@@ -58,6 +60,8 @@ public class StringQualityAddFunction implements Function2<StringQuality,Writabl
             if(str.matches("\\s+")) whitespaceOnly++;
         }
 
-        return new StringQuality(valid,invalid,countMissing,countTotal,empty,alphabetic,numerical,word,whitespaceOnly,0);
+        hll.offer(str)
+
+        return new StringQuality(valid,invalid,countMissing,countTotal,empty,alphabetic,numerical,word,whitespaceOnly,hll);
     }
 }

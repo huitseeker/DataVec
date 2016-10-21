@@ -19,6 +19,7 @@ package org.datavec.api.transform.quality.columns;
 import java.lang.Math;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import com.clearspring.analytics.stream.cardinality.CardinalityMergeException;
 import com.clearspring.analytics.stream.cardinality.HyperLogLogPlus;
 
 /**
@@ -71,7 +72,7 @@ public class StringQuality extends ColumnQuality {
     }
 
 
-    public StringQuality add(StringQuality other){
+    public StringQuality add(StringQuality other) throws CardinalityMergeException{
         hll.addAll(other.hll);
         return new StringQuality(
                 countValid + other.countValid,

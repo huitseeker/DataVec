@@ -60,7 +60,7 @@ public class StringQualityAddFunction implements Function2<StringQuality,Writabl
             if(str.matches("\\s+")) whitespaceOnly++;
         }
 
-        hll.offer(str)
+        hll.offer(str);
 
         return new StringQuality(valid,invalid,countMissing,countTotal,empty,alphabetic,numerical,word,whitespaceOnly,hll);
     }

@@ -45,6 +45,8 @@ import org.datavec.spark.transform.misc.SumLongsFunction2;
 import org.datavec.spark.transform.misc.comparator.Tuple2Comparator;
 import org.datavec.spark.transform.quality.integer.IntegerQualityAddFunction;
 import org.datavec.spark.transform.quality.longq.LongQualityMergeFunction;
+import org.datavec.spark.transform.quality.noop.NoopQualityAddFunction;
+import org.datavec.spark.transform.quality.noop.NoopQualityMergeFunction;
 import org.datavec.spark.transform.quality.string.StringQualityAddFunction;
 import org.datavec.spark.transform.quality.time.TimeQualityAddFunction;
 import org.datavec.spark.transform.analysis.AnalysisCounter;
@@ -615,32 +617,56 @@ public class AnalyzeSpark {
     }
 
     @Data @AllArgsConstructor
-    class Aggregator<T, U>{
+    static class Aggregator<T, U>{
         @NonNull private final U initial;
         @NonNull private final Function2<U, T, U> adder;
         @NonNull private final Function2<U, U, U> merger;
     }
 
-    /*
     private static Aggregator<ColumnQuality, ColumnType> aggregationResources(ColumnMetaData meta) {
         switch(meta.getColumnType()){
         case String:
-
+            return new Aggregator(new StringQuality(), new
+                                  StringQualityAddFunction((StringMetaData)meta),
+                                  new StringQualityMergeFunction());
+        case Integer:
+            return new Aggregator(new IntegerQuality(0,0,0,0,0), new
+                                  IntegerQualityAddFunction((IntegerMetaData)meta),
+                                  new IntegerQualityMergeFunction());
+        case Long:
+            return new Aggregator(new LongQuality(), new
+                                  LongQualityAddFunction((LongMetaData)meta),
+                                  new LongQualityMergeFunction());
+        case Double:
+            return new Aggregator(new DoubleQuality(), new
+                                  RealQualityAddFunction((DoubleMetaData)meta),
+                                  new RealQualityMergeFunction());
+        case Categorical:
+            return new Aggregator(new CategoricalQuality(), new
+                                  CategoricalQualityAddFunction((CategoricalMetaData)meta),
+                                  new CategoricalQualityMergeFunction());
+        case Time:
+            return new Aggregator(new TimeQuality(), new
+                                  TimeQualityAddFunction((TimeMetaData)meta),
+                                  new TimeQualityMergeFunction());
+        case Bytes:
+            return new Aggregator(new BytesQuality(), new NoopQualityAddFunction(), new
+                                  NoopQualityMergeFunction()); // TODO
+        default:
+            throw new RuntimeException("Unknown or not implemented column type: " + meta.getColumnType());
         }
     }
-    */
 
     private static ColumnQuality analyze(ColumnMetaData meta, JavaRDD<Writable> ithColumn){
 
         switch(meta.getColumnType()){
             case String:
                 ithColumn.cache();
-                long countUnique = ithColumn.distinct().count();
 
                 StringQuality initialString = new StringQuality();
                 StringQuality stringQuality = ithColumn.aggregate(initialString,new StringQualityAddFunction((StringMetaData)meta),new StringQualityMergeFunction());
-                return stringQuality.add(new StringQuality(0,0,0,0,0,0,0,0,0,countUnique));
-            case Integer:
+                return stringQuality;
+        case Integer:
                 IntegerQuality initialInt = new IntegerQuality(0,0,0,0,0);
                 return ithColumn.aggregate(initialInt,new IntegerQualityAddFunction((IntegerMetaData)meta),new IntegerQualityMergeFunction());
             case Long:

@@ -34,15 +34,15 @@ import java.util.List;
  */
 @AllArgsConstructor
 public class SparkGroupToSequenceFunction
-                implements Function<Tuple2<Writable, Iterable<List<Writable>>>, List<List<Writable>>> {
+                implements Function<Iterable<List<Writable>>, List<List<Writable>>> {
 
     private final SequenceComparator comparator;
 
     @Override
-    public List<List<Writable>> call(Tuple2<Writable, Iterable<List<Writable>>> tuple) throws Exception {
+    public List<List<Writable>> call(Iterable<List<Writable>> lists) throws Exception {
 
         List<List<Writable>> list = new ArrayList<>();
-        for (List<Writable> writables : tuple._2())
+        for (List<Writable> writables : lists)
             list.add(writables);
 
         Collections.sort(list, comparator);

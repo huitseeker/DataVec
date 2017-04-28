@@ -218,7 +218,7 @@ public class SparkTransformExecutor {
 
             } else if (d.getConvertToSequence() != null) {
                 //Convert to a sequence...
-                ConvertToSequence cts = d.getConvertToSequence();
+                final ConvertToSequence cts = d.getConvertToSequence();
 
                 //First: convert to PairRDD
                 Schema schema = cts.getInputSchema();
@@ -228,7 +228,7 @@ public class SparkTransformExecutor {
                 JavaPairRDD<Writable, Iterable<List<Writable>>> grouped = withKey.groupByKey();
 
                 //Now: convert to a sequence...
-                currentSequence = grouped.map(new SparkGroupToSequenceFunction(cts.getComparator()));
+                currentSequence = grouped.mapValues(new SparkGroupToSequenceFunction(cts.getComparator())).values();
                 currentWritables = null;
             } else if (d.getConvertFromSequence() != null) {
                 //Convert from sequence...
@@ -254,7 +254,7 @@ public class SparkTransformExecutor {
                 JavaPairRDD<String, List<Writable>> pair =
                                 currentWritables.mapToPair(new MapToPairForReducerFunction(reducer));
 
-                currentWritables = pair.groupByKey().map(new ReducerFunction(reducer));
+                currentWritables = pair.groupByKey().mapValues(new ReducerFunction(reducer)).values();
             } else if (d.getCalculateSortedRank() != null) {
                 CalculateSortedRank csr = d.getCalculateSortedRank();
 

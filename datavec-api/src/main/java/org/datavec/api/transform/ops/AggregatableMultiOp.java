@@ -1,15 +1,44 @@
 package org.datavec.api.transform.ops;
 
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
 import org.datavec.api.writable.Writable;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 /**
  * Created by huitseeker on 5/8/17.
  */
 public abstract class AggregatableMultiOp<T, U> implements AggregatableReduceOp<T,U,List<Writable>> {
+
+    <W extends Writable> AggregatableMultiOp<T, U> fromOp(final AggregatableReduceOp<T, U, W> op){
+        return new AggregatableMultiOp<T, U>() {
+
+            @Override
+            public U tally(U accumulator, T element) {
+                return op.tally(accumulator, element);
+            }
+
+            @Override
+            public U combine(U accu1, U accu2) {
+                return op.combine(accu1, accu2);
+            }
+
+            @Override
+            public U neutral() {
+                return op.neutral();
+            }
+
+            @Override
+            public List<Writable> summarize(U acc) {
+                return Collections.singletonList((Writable) op.summarize(acc));
+            }
+        };
+    }
 
     <V> AggregatableReduceOp<T, Pair<U, V>, List<Writable>> andThen(final AggregatableReduceOp<T, V, List<Writable>> otherOp){
         return new AggregatableMultiOp<T, Pair<U, V>>() {

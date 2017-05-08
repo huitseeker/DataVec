@@ -1,5 +1,7 @@
 package org.datavec.api.transform.ops;
 
+import com.clearspring.analytics.stream.cardinality.CardinalityMergeException;
+import com.clearspring.analytics.stream.cardinality.HyperLogLogPlus;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 
@@ -289,4 +291,45 @@ public class AggregatorImpls {
             }
           },
           Float.MIN_VALUE);
+
+  public class AggregatableCountUnique<T> extends AggregatorOp<T, HyperLogLogPlus, Long>{
+
+      @Override
+      public HyperLogLogPlus tally(HyperLogLogPlus accumulator, T element) {
+          accumulator.offer(element);
+          return accumulator;
+      }
+
+      @Override
+      public HyperLogLogPlus combine(HyperLogLogPlus accu1, HyperLogLogPlus accu2) {
+
+          try {
+              accu1.addAll(accu2);
+          } catch (CardinalityMergeException e) {
+              throw new RuntimeException(e);
+          }
+          return accu1;
+      }
+
+      @Override
+      public HyperLogLogPlus neutral() {
+        /*
+         * This is based on streamlib's implementation of "HyperLogLog in Practice:
+         * Algorithmic Engineering of a State of The Art Cardinality Estimation Algorithm", available
+         * <a href="http://dx.doi.org/10.1145/2452376.2452456">here</a>.
+         *
+         * The relative accuracy is approximately `1.054 / sqrt(2^p)`. Setting
+         * a nonzero `sp > p` in HyperLogLogPlus(p, sp) would trigger sparse
+         * representation of registers, which may reduce the memory consumption
+         * and increase accuracy when the cardinality is small.
+         */
+          Float p = 0.05F;
+          return new HyperLogLogPlus((int) Math.ceil(2.0 * Math.log(1.054 / p) / Math.log(2)), 0);
+      }
+
+      @Override
+      public Long summarize(HyperLogLogPlus acc) {
+          return acc.cardinality();
+      }
+  }
 }

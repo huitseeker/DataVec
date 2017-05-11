@@ -3,7 +3,7 @@ package org.datavec.api.transform.ops;
 /**
  * Created by huitseeker on 4/28/17.
  */
-public interface AggregatableReduceOp<T, U, V> {
+public interface AggregableReduceOp<T, U, V> {
 
     public U tally(U accumulator, T element);
 

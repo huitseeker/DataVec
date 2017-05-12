@@ -35,7 +35,7 @@ import java.util.List;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
 @JsonSubTypes(value = {@JsonSubTypes.Type(value = Reducer.class, name = "Reducer")})
-public interface IAssociativeReducer {
+public interface IAssociativeReducer<T> {
 
     /**
      *
@@ -61,7 +61,7 @@ public interface IAssociativeReducer {
      * @param examplesList
      * @return
      */
-     AggregableMultiOp<List<Writable>, ?> aggregableReduce();
+     AggregableMultiOp<List<Writable>, T> aggregableReduce();
 
     /**
      *

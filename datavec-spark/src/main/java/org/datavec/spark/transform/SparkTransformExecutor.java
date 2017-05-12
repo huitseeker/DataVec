@@ -16,7 +16,10 @@
 
 package org.datavec.spark.transform;
 
+import com.sun.corba.se.spi.ior.Writeable;
+import org.apache.spark.api.java.function.Function2;
 import org.datavec.api.berkeley.Iterators;
+import org.datavec.api.transform.reduce.IAssociativeReducer;
 import org.datavec.spark.SequenceEmptyRecordFunction;
 import org.datavec.spark.functions.EmptyRecordFunction;
 import org.datavec.spark.transform.join.*;
@@ -246,7 +249,7 @@ public class SparkTransformExecutor {
                     throw new IllegalStateException("Error during execution of SequenceSplit: currentSequence is null");
                 currentSequence = currentSequence.flatMap(new SequenceSplitFunction(sequenceSplit));
             } else if (d.getReducer() != null) {
-                IReducer reducer = d.getReducer();
+                final IAssociativeReducer reducer = d.getReducer();
 
                 if (currentWritables == null)
                     throw new IllegalStateException("Error during execution of reduction: current writables are null. "
@@ -254,7 +257,19 @@ public class SparkTransformExecutor {
                 JavaPairRDD<String, List<Writable>> pair =
                                 currentWritables.mapToPair(new MapToPairForReducerFunction(reducer));
 
-                currentWritables = pair.groupByKey().mapValues(new ReducerFunction(reducer)).values();
+
+                currentWritables = pair.aggregateByKey(reducer.aggregableReduce().neutral(), new Function2<?, List<Writable>, List<Writable>>() {
+                    @Override
+                    public List<Writable> call(? accumulators, List<Writable> writables) throws Exception {
+                        return reducer.aggregableReduce().tally(accumulators, writables);
+                    }
+                }, new Function2<?, ?, List<Writable>>() {
+                    @Override
+                    public List<Writable> call(? writables, ? writables2) throws Exception {
+                        return reducer.aggregableReduce().combine(writables, writables2);
+                    }
+                }).mapValues();
+
             } else if (d.getCalculateSortedRank() != null) {
                 CalculateSortedRank csr = d.getCalculateSortedRank();
 

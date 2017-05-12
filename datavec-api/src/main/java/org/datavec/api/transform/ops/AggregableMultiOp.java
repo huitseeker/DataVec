@@ -11,9 +11,9 @@ import java.util.List;
 /**
  * Created by huitseeker on 5/8/17.
  */
-public abstract class AggregableMultiOp<T, U> implements AggregableReduceOp<T, U, List<Writable>> {
+public abstract class AggregableMultiOp<T, U> implements IAggregableReduceOp<T, U, List<Writable>> {
 
-        public static <X, Y, W extends Writable> AggregableMultiOp<X, Y> fromOp(final AggregableReduceOp<X, Y, W> op){
+        public static <X, Y, W extends Writable> AggregableMultiOp<X, Y> fromOp(final IAggregableReduceOp<X, Y, W> op){
         return new AggregableMultiOp<X, Y>() {
 
             @Override
@@ -38,7 +38,7 @@ public abstract class AggregableMultiOp<T, U> implements AggregableReduceOp<T, U
         };
     }
 
-    public <V, W extends AggregableReduceOp<T, V, List<Writable>>> AggregableMultiOp<T, Pair<U, V>> andThen(final W otherOp){
+    public <V, W extends IAggregableReduceOp<T, V, List<Writable>>> AggregableMultiOp<T, Pair<U, V>> andThen(final W otherOp){
         return new AggregableMultiOp<T, Pair<U, V>>() {
             @Override
             public Pair<U, V> tally(Pair<U, V> accumulator, T element) {

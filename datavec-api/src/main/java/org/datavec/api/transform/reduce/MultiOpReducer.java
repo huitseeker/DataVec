@@ -17,31 +17,23 @@
 package org.datavec.api.transform.reduce;
 
 import com.clearspring.analytics.stream.cardinality.HyperLogLogPlus;
-import com.sun.corba.se.spi.ior.Writeable;
-import com.sun.java.swing.plaf.windows.WindowsTableHeaderUI;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
-import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.ReduceOp;
-import org.datavec.api.transform.condition.Condition;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.metadata.DoubleMetaData;
 import org.datavec.api.transform.metadata.IntegerMetaData;
 import org.datavec.api.transform.metadata.LongMetaData;
 import org.datavec.api.transform.ops.AggregableMultiOp;
-import org.datavec.api.transform.ops.AggregableReduceOp;
 import org.datavec.api.transform.ops.AggregatorImpls;
-import org.datavec.api.transform.ops.AggregatorOp;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.*;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-import java.io.Serializable;
 import java.util.*;
 import java.util.function.Function;
 

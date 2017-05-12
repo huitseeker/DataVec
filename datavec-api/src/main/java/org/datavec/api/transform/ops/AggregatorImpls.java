@@ -13,7 +13,7 @@ import java.util.function.Function;
  */
 public class AggregatorImpls {
 
-    public static class AggregableFirst<T> extends AggregatorOp<T, T, T> {
+    public static class AggregableFirst<T> extends AggregableReduceOp<T, T, T> {
 
         @Override
         public T tally(T accumulator, T element) {
@@ -36,7 +36,7 @@ public class AggregatorImpls {
         }
     }
 
-    public static class AggregableLast<T> extends AggregatorOp<T, T, T> {
+    public static class AggregableLast<T> extends AggregableReduceOp<T, T, T> {
 
         @Override
         public T tally(T accumulator, T element) {
@@ -59,7 +59,7 @@ public class AggregatorImpls {
         }
     }
 
-    public static class AggregableSum<T extends Number> extends AggregatorOp<T, Double, Writable> {
+    public static class AggregableSum<T extends Number> extends AggregableReduceOp<T, Double, Writable> {
 
         public Double tally(Double accumulator, T n) {
             return accumulator + n.doubleValue();
@@ -78,7 +78,7 @@ public class AggregatorImpls {
         }
     }
 
-    public static class AggregableProd<T extends Number> extends AggregatorOp<T, Double, Writable> {
+    public static class AggregableProd<T extends Number> extends AggregableReduceOp<T, Double, Writable> {
 
         public Double tally(Double accumulator, T n) {
             return accumulator * n.doubleValue();
@@ -97,7 +97,7 @@ public class AggregatorImpls {
         }
     }
 
-    public static class AggregableCount<T> extends AggregatorOp<T, Long, Writable> {
+    public static class AggregableCount<T> extends AggregableReduceOp<T, Long, Writable> {
 
         public Long tally(Long accumulator, T n) {
             return accumulator + 1;
@@ -116,7 +116,7 @@ public class AggregatorImpls {
         }
     }
 
-    public static class AggregableMean<T extends Number> extends AggregatorOp<T, Pair<Long, Double>, Writable> {
+    public static class AggregableMean<T extends Number> extends AggregableReduceOp<T, Pair<Long, Double>, Writable> {
 
         public Pair<Long, Double> tally(Pair<Long, Double> accumulator, T n) {
 
@@ -150,7 +150,7 @@ public class AggregatorImpls {
     }
 
     public static class AggregableStdDev<T extends Number>
-            extends AggregatorOp<T, Triple<Long, Double, Double>, Writable> {
+            extends AggregableReduceOp<T, Triple<Long, Double, Double>, Writable> {
 
         public Triple<Long, Double, Double> tally(Triple<Long, Double, Double> accumulator, T n) {
 
@@ -190,7 +190,7 @@ public class AggregatorImpls {
         }
     }
 
-    public static class AggregableFunction<T> extends AggregatorOp<T, T, T> {
+    public static class AggregableFunction<T> extends AggregableReduceOp<T, T, T> {
 
         private DecoratedBiFunction<T, T, T> function;
         private T neutralElement;
@@ -216,7 +216,7 @@ public class AggregatorImpls {
 
     }
 
-    public static final AggregatorOp<Long, Long, Long> minLong =
+    public static final AggregableReduceOp<Long, Long, Long> minLong =
             new AggregableFunction<>(
                     new DecoratedBiFunction<Long, Long, Long>() {
                         @Override
@@ -226,7 +226,7 @@ public class AggregatorImpls {
                     },
                     Long.MAX_VALUE);
 
-    public static final AggregatorOp<Integer, Integer, Integer> minInt =
+    public static final AggregableReduceOp<Integer, Integer, Integer> minInt =
             new AggregableFunction<>(
                     new DecoratedBiFunction<Integer, Integer, Integer>() {
                         @Override
@@ -236,7 +236,7 @@ public class AggregatorImpls {
                     },
                     Integer.MAX_VALUE);
 
-    public static final AggregatorOp<Double, Double, Double> minDouble =
+    public static final AggregableReduceOp<Double, Double, Double> minDouble =
             new AggregableFunction<>(
                     new DecoratedBiFunction<Double, Double, Double>() {
                         @Override
@@ -245,7 +245,7 @@ public class AggregatorImpls {
                         }
                     }, Double.MAX_VALUE);
 
-    public static final AggregatorOp<Float, Float, Float> minFloat =
+    public static final AggregableReduceOp<Float, Float, Float> minFloat =
             new AggregableFunction<>(
                     new DecoratedBiFunction<Float, Float, Float>() {
                         @Override
@@ -255,7 +255,7 @@ public class AggregatorImpls {
                     },
                     Float.MAX_VALUE);
 
-    public static final AggregatorOp<Long, Long, Long> maxLong =
+    public static final AggregableReduceOp<Long, Long, Long> maxLong =
             new AggregableFunction<>(
                     new DecoratedBiFunction<Long, Long, Long>() {
                         @Override
@@ -264,7 +264,7 @@ public class AggregatorImpls {
                         }
                     }, Long.MIN_VALUE);
 
-    public static final AggregatorOp<Integer, Integer, Integer> maxInt =
+    public static final AggregableReduceOp<Integer, Integer, Integer> maxInt =
             new AggregableFunction<>(
                     new DecoratedBiFunction<Integer, Integer, Integer>() {
                         @Override
@@ -274,7 +274,7 @@ public class AggregatorImpls {
                     },
                     Integer.MIN_VALUE);
 
-    public static final AggregatorOp<Double, Double, Double> maxDouble =
+    public static final AggregableReduceOp<Double, Double, Double> maxDouble =
             new AggregableFunction<>(
                     new DecoratedBiFunction<Double, Double, Double>() {
                         @Override
@@ -284,7 +284,7 @@ public class AggregatorImpls {
                     },
                     Double.MIN_VALUE);
 
-    public static final AggregatorOp<Float, Float, Float> maxFloat =
+    public static final AggregableReduceOp<Float, Float, Float> maxFloat =
             new AggregableFunction<>(
                     new DecoratedBiFunction<Float, Float, Float>() {
                         @Override
@@ -294,39 +294,39 @@ public class AggregatorImpls {
                     },
                     Float.MIN_VALUE);
 
-    public static final AggregatorOp<Long, Pair<Long, Long>, Long> rangeLong =
-            AggregatorOp.compose(minLong, maxLong).andFinally(new Function<Pair<Long, Long>, Long>() {
+    public static final AggregableReduceOp<Long, Pair<Long, Long>, Long> rangeLong =
+            AggregableReduceOp.compose(minLong, maxLong).andFinally(new Function<Pair<Long, Long>, Long>() {
                 @Override
                 public Long apply(Pair<Long, Long> longLongPair) {
                     return longLongPair.getRight() - longLongPair.getLeft();
                 }
             });
 
-    public static final AggregatorOp<Integer, Pair<Integer, Integer>, Integer> rangeInt =
-            AggregatorOp.compose(minInt, maxInt).andFinally(new Function<Pair<Integer, Integer>, Integer>() {
+    public static final AggregableReduceOp<Integer, Pair<Integer, Integer>, Integer> rangeInt =
+            AggregableReduceOp.compose(minInt, maxInt).andFinally(new Function<Pair<Integer, Integer>, Integer>() {
                 @Override
                 public Integer apply(Pair<Integer, Integer> intIntPair) {
                     return intIntPair.getRight() - intIntPair.getLeft();
                 }
             });
 
-    public static final AggregatorOp<Double, Pair<Double, Double>, Double> rangeDouble =
-            AggregatorOp.compose(minDouble, maxDouble).andFinally(new Function<Pair<Double, Double>, Double>() {
+    public static final AggregableReduceOp<Double, Pair<Double, Double>, Double> rangeDouble =
+            AggregableReduceOp.compose(minDouble, maxDouble).andFinally(new Function<Pair<Double, Double>, Double>() {
                 @Override
                 public Double apply(Pair<Double, Double> doubleDoublePair) {
                     return doubleDoublePair.getRight() - doubleDoublePair.getLeft();
                 }
             });
 
-    public static final AggregatorOp<Float, Pair<Float, Float>, Float> rangeFloat =
-            AggregatorOp.compose(minFloat, maxFloat).andFinally(new Function<Pair<Float, Float>, Float>() {
+    public static final AggregableReduceOp<Float, Pair<Float, Float>, Float> rangeFloat =
+            AggregableReduceOp.compose(minFloat, maxFloat).andFinally(new Function<Pair<Float, Float>, Float>() {
                 @Override
                 public Float apply(Pair<Float, Float> floatFloatPair) {
                     return floatFloatPair.getRight() - floatFloatPair.getLeft();
                 }
             });
 
-    public static class AggregableCountUnique<T> extends AggregatorOp<T, HyperLogLogPlus, Writable> {
+    public static class AggregableCountUnique<T> extends AggregableReduceOp<T, HyperLogLogPlus, Writable> {
 
         @Override
         public HyperLogLogPlus tally(HyperLogLogPlus accumulator, T element) {

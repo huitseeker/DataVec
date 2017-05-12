@@ -11,7 +11,7 @@ import java.util.List;
 /**
  * Created by huitseeker on 5/8/17.
  */
-public abstract class AggregableMultiOp<T, U> implements AggregableReduceOp<T,U,List<Writable>> {
+public abstract class AggregableMultiOp<T, U> implements AggregableReduceOp<T, U, List<Writable>> {
 
         public static <X, Y, W extends Writable> AggregableMultiOp<X, Y> fromOp(final AggregableReduceOp<X, Y, W> op){
         return new AggregableMultiOp<X, Y>() {
@@ -66,7 +66,7 @@ public abstract class AggregableMultiOp<T, U> implements AggregableReduceOp<T,U,
         };
     }
 
-    public static <W, X, Y extends AggregableReduceOp<W, X, List<Writable>>>  AggregableMultiOp<List<W>, List<X>> parallel(final List<Y> lOps){
+    public static <W, X, Y extends AggregableMultiOp<W, X>>  AggregableMultiOp<List<W>, List<X>> parallel(final List<Y> lOps){
         return new AggregableMultiOp<List<W>, List<X>>() {
 
             @Override

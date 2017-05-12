@@ -25,6 +25,7 @@ import org.datavec.api.transform.sequence.trim.SequenceTrimTransform;
 import org.datavec.api.transform.transform.integer.IntegerToOneHotTransform;
 import org.datavec.api.transform.transform.sequence.SequenceMovingWindowReduceTransform;
 import org.datavec.api.transform.transform.sequence.SequenceOffsetTransform;
+import org.datavec.api.transform.reduce.IAssociativeReducer;
 import org.datavec.api.transform.transform.string.AppendStringColumnTransform;
 import org.datavec.api.transform.transform.string.ConvertToString;
 import org.datavec.api.transform.transform.string.ReplaceStringTransform;
@@ -139,7 +140,7 @@ public class TransformProcess implements Serializable {
                 d.getSequenceSplit().setInputSchema(currInputSchema);
                 continue; //no change to sequence schema
             } else if (d.getReducer() != null) {
-                IReducer reducer = d.getReducer();
+                IAssociativeReducer reducer = d.getReducer();
                 reducer.setInputSchema(currInputSchema);
                 currInputSchema = reducer.transform(currInputSchema);
             } else if (d.getCalculateSortedRank() != null) {
@@ -203,7 +204,7 @@ public class TransformProcess implements Serializable {
             } else if (d.getSequenceSplit() != null) {
                 continue; //Sequence split -> no change to schema
             } else if (d.getReducer() != null) {
-                IReducer reducer = d.getReducer();
+                IAssociativeReducer reducer = d.getReducer();
                 currInputSchema = reducer.transform(currInputSchema);
             } else if (d.getCalculateSortedRank() != null) {
                 CalculateSortedRank csr = d.getCalculateSortedRank();
@@ -1009,7 +1010,7 @@ public class TransformProcess implements Serializable {
          *
          * @param reducer Reducer to use
          */
-        public Builder reduce(IReducer reducer) {
+        public Builder reduce(IAssociativeReducer reducer) {
             actionList.add(new DataAction(reducer));
             return this;
         }

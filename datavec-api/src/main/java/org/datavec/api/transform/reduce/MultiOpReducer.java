@@ -194,7 +194,7 @@ public class MultiOpReducer implements IAssociativeReducer {
     }
 
     @Override
-    public AggregableMultiOp<List<Writable>, ?> aggregableReduce() {
+    public AggregableMultiOp<List<Writable>, List<?>> aggregableReduce() {
         //Go through each writable, and reduce according to whatever strategy is specified
 
         if (schema == null)
@@ -668,8 +668,7 @@ public class MultiOpReducer implements IAssociativeReducer {
         return res;
     }
 
-    public static AggregableMultiOp<Writable, ?> reduceTimeColumn(List<ReduceOp> lop, List<Writable> values, boolean ignoreInvalid,
-                    ColumnMetaData metaData) {
+    public static AggregableMultiOp<Writable, ?> reduceTimeColumn(List<ReduceOp> lop) {
 
         Function<Long, Writable> toWritable = new Function<Long, Writable>(){
 
@@ -829,7 +828,7 @@ public class MultiOpReducer implements IAssociativeReducer {
 
         private Builder add(ReduceOp op, String[] cols) {
             for (String s : cols) {
-                opMap.put(s, op);
+                opMap.put(s, Collections.singletonList(op));
             }
             return this;
         }

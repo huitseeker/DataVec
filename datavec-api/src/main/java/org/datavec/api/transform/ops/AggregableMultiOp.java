@@ -258,4 +258,30 @@ public abstract class AggregableMultiOp<T, U> implements IAggregableReduceOp<T, 
             }
         };
     }
+
+    public static <T, U> AggregableMultiOp<T, ? extends HList<?>> toHListWritable(final AggregableMultiOp<T, U> aggregableMultiOp){
+        return new AggregableMultiOp<T, HList.HCons<U, ?>>(){
+
+            @Override
+            public HList.HCons<U, ?> tally(HList.HCons<U, ?> accumulator, T element) {
+                return HList.cons(aggregableMultiOp.tally(accumulator.head(), element), HList.nil());
+            }
+
+            @Override
+            public HList.HCons<U, ?> combine(HList.HCons<U, ?> accu1, HList.HCons<U, ?> accu2) {
+                return HList.cons(aggregableMultiOp.combine(accu1.head(), accu2.head()), HList.nil());
+            }
+
+            @Override
+            public HList.HCons<U, ?> neutral() {
+                return HList.cons(aggregableMultiOp.neutral(), HList.nil());
+            }
+
+            @Override
+            public List<Writable> summarize(HList.HCons<U, ?> acc) {
+                return aggregableMultiOp.summarize(acc.head());
+            }
+
+        };
+    }
 }

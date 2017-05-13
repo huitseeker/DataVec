@@ -5,6 +5,7 @@ import org.datavec.api.transform.utils.HList;
 import org.datavec.api.writable.ByteWritable;
 import org.datavec.api.writable.Writable;
 
+import javax.jws.HandlerChain;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -39,27 +40,27 @@ public abstract class AggregableMultiOp<T, U> implements IAggregableReduceOp<T, 
         };
     }
 
-    public <V, W extends IAggregableReduceOp<T, V, List<Writable>>> AggregableMultiOp<T, Pair<U, V>> andThen(final W otherOp){
-        return new AggregableMultiOp<T, Pair<U, V>>() {
+    public <V extends HList<V>, W extends IAggregableReduceOp<T, V, List<Writable>>> AggregableMultiOp<T, HList.HCons<U, V>> andThen(final W otherOp){
+        return new AggregableMultiOp<T, HList.HCons<U, V>>() {
             @Override
-            public Pair<U, V> tally(Pair<U, V> accumulator, T element) {
-                return Pair.of(AggregableMultiOp.this.tally(accumulator.getLeft(), element), otherOp.tally(accumulator.getRight(), element));
+            public HList.HCons<U, V> tally(HList.HCons<U, V> accumulator, T element) {
+                return HList.cons(AggregableMultiOp.this.tally(accumulator.head(), element), otherOp.tally(accumulator.tail(), element));
             }
 
             @Override
-            public Pair<U, V> combine(Pair<U, V> accu1, Pair<U, V> accu2) {
-                return Pair.of(AggregableMultiOp.this.combine(accu1.getLeft(), accu2.getLeft()), otherOp.combine(accu1.getRight(), accu2.getRight()));
+            public HList.HCons<U, V> combine(HList.HCons<U, V> accu1, HList.HCons<U, V> accu2) {
+                return HList.cons(AggregableMultiOp.this.combine(accu1.head(), accu2.head()), otherOp.combine(accu1.tail(), accu2.tail()));
             }
 
             @Override
-            public Pair<U, V> neutral() {
-                return Pair.of(AggregableMultiOp.this.neutral(), otherOp.neutral());
+            public HList.HCons<U, V> neutral() {
+                return HList.cons(AggregableMultiOp.this.neutral(), otherOp.neutral());
             }
 
             @Override
-            public List<Writable> summarize(Pair<U, V> acc) {
-                List<Writable> leftList = AggregableMultiOp.this.summarize(acc.getLeft());
-                List<Writable> rightList = otherOp.summarize(acc.getRight());
+            public List<Writable> summarize(HList.HCons<U, V> acc) {
+                List<Writable> leftList = AggregableMultiOp.this.summarize(acc.head());
+                List<Writable> rightList = otherOp.summarize(acc.tail());
                 List<Writable> res = new ArrayList<>(leftList);
                 res.addAll(rightList);
                 return res;

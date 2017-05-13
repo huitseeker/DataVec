@@ -261,7 +261,7 @@ public class MultiOpReducer implements IAssociativeReducer {
             }
         };
 
-        AggregableMultiOp<Writable, ?> res = null;
+        AggregableMultiOp<Writable, ? extends HList<?>> res = null;
         for (int i = 0; i < lop.size(); i++){
             switch (lop.get(i)) {
                 case Min:

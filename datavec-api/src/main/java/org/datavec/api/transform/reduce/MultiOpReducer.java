@@ -185,7 +185,7 @@ public class MultiOpReducer implements IAssociativeReducer {
     }
 
     @Override
-    public IAggregableReduceOp<List<Writable>, List<Writable>> aggregableReduce() {
+    public IAggregableReduceOp<List<Writable>, List<Writable>> aggregableReducer() {
         //Go through each writable, and reduce according to whatever strategy is specified
 
         if (schema == null)

@@ -60,7 +60,7 @@ public interface IAssociativeReducer<T> {
      * @param examplesList
      * @return
      */
-     IAggregableReduceOp<List<Writable>, List<Writable>> aggregableReduce();
+     IAggregableReduceOp<List<Writable>, List<Writable>> aggregableReducer();
 
     /**
      *

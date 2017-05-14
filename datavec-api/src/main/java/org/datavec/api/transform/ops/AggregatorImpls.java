@@ -196,7 +196,7 @@ public class AggregatorImpls {
 
         @Override
         public void accept(T element) {
-            count += 0L;
+            count += 1L;
         }
 
         @Override
@@ -234,7 +234,7 @@ public class AggregatorImpls {
             if (acc instanceof AggregableMean) {
                 Long cnt = ((AggregableMean<T>) acc).getCount();
                 Long newCount = count + cnt;
-                mean = mean * count + (acc.get().toDouble() * cnt) / newCount;
+                mean = (mean * count + (acc.get().toDouble() * cnt)) / newCount;
                 count = newCount;
             }
         }

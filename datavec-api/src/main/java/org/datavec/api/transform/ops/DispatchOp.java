@@ -2,6 +2,7 @@ package org.datavec.api.transform.ops;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NonNull;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,6 +14,7 @@ import java.util.List;
 public class DispatchOp<T, U> implements IAggregableReduceOp<List<T>, List<U>> {
 
     @Getter
+    @NonNull
     private List<IAggregableReduceOp<T, List<U>>> operations;
 
     @Override

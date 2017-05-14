@@ -2,6 +2,8 @@ package org.datavec.api.transform.ops;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
 import org.datavec.api.writable.ByteWritable;
 import org.datavec.api.writable.Writable;
@@ -17,6 +19,7 @@ import java.util.List;
 public class AggregableMultiOp<T> implements IAggregableReduceOp<T, List<Writable>> {
 
     @Getter
+    @NonNull
     private List<IAggregableReduceOp<T, Writable>> operations;
 
     public void accept(T t){
@@ -38,7 +41,7 @@ public class AggregableMultiOp<T> implements IAggregableReduceOp<T, List<Writabl
     public List<Writable> get(){
         List<Writable> res = new ArrayList<>(operations.size());
         for (int i = 0; i < operations.size(); i++){
-            res.set(i, operations.get(i).get());
+            res.add(operations.get(i).get());
         }
         return res;
     }

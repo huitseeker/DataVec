@@ -18,8 +18,6 @@ public class AggregatorImplsTest {
 
     private List<Integer> intList = new ArrayList<>(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9));
     private List<String> stringList = new ArrayList<>(Arrays.asList("arakoa", "abracadabra", "blast", "acceptance"));
-    private List<Writable> mixedList = new ArrayList<Writable>(Arrays.asList(new IntWritable(1), new Text("abracadabra")));
-
 
     @Test
     public void AggregableFirstTest(){

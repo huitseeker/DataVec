@@ -17,6 +17,7 @@
 package org.datavec.api.transform.reduce;
 
 import org.datavec.api.transform.ops.AggregableMultiOp;
+import org.datavec.api.transform.ops.IAggregableReduceOp;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.Writable;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
@@ -59,7 +60,7 @@ public interface IAssociativeReducer<T> {
      * @param examplesList
      * @return
      */
-     AggregableMultiOp<List<Writable>, T> aggregableReduce();
+     IAggregableReduceOp<List<Writable>, List<Writable>> aggregableReduce();
 
     /**
      *

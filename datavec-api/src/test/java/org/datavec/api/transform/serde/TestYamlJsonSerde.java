@@ -27,6 +27,7 @@ import org.datavec.api.transform.filter.Filter;
 import org.datavec.api.transform.filter.FilterInvalidValues;
 import org.datavec.api.transform.rank.CalculateSortedRank;
 import org.datavec.api.transform.reduce.IReducer;
+import org.datavec.api.transform.reduce.MultiOpReducer;
 import org.datavec.api.transform.reduce.Reducer;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.sequence.ConvertFromSequence;
@@ -432,7 +433,7 @@ public class TestYamlJsonSerde {
                         new DataAction(new ConvertToSequence("KeyCol", new NumericalColumnComparator("Col", true))),
                         new DataAction(new ConvertFromSequence()),
                         new DataAction(new SequenceSplitTimeSeparation("TimeCol", 1, TimeUnit.HOURS)),
-                        new DataAction(new Reducer.Builder(ReduceOp.TakeFirst).build()),
+                        new DataAction(new MultiOpReducer.Builder(ReduceOp.TakeFirst).build()),
                         new DataAction(new CalculateSortedRank("NewCol", "SortCol", new DoubleWritableComparator()))};
 
         for (DataAction f : dataActions) {

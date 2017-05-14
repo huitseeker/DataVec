@@ -27,6 +27,7 @@ import org.datavec.api.transform.condition.column.NullWritableColumnCondition;
 import org.datavec.api.transform.condition.sequence.SequenceLengthCondition;
 import org.datavec.api.transform.filter.ConditionFilter;
 import org.datavec.api.transform.filter.FilterInvalidValues;
+import org.datavec.api.transform.reduce.MultiOpReducer;
 import org.datavec.api.transform.reduce.Reducer;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.sequence.comparator.NumericalColumnComparator;
@@ -119,7 +120,7 @@ public class TestJsonYaml {
                                         .splitSequence(new SequenceSplitTimeSeparation("TimeCol2", 1, TimeUnit.HOURS))
 
                                         //Reducers and reduce by window:
-                                        .reduce(new Reducer.Builder(ReduceOp.TakeFirst).keyColumns("TimeCol2")
+                                        .reduce(new MultiOpReducer.Builder(ReduceOp.TakeFirst).keyColumns("TimeCol2")
                                                         .countColumns("Cat").sumColumns("Dbl").build())
                                         .reduceSequenceByWindow(
                                                         new Reducer.Builder(ReduceOp.TakeFirst).countColumns("Cat2")

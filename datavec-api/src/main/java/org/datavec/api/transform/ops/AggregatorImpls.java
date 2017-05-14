@@ -2,351 +2,325 @@ package org.datavec.api.transform.ops;
 
 import com.clearspring.analytics.stream.cardinality.CardinalityMergeException;
 import com.clearspring.analytics.stream.cardinality.HyperLogLogPlus;
+import lombok.Getter;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.datavec.api.writable.*;
 
+import java.io.WriteAbortedException;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * Created by huitseeker on 4/28/17.
  */
 public class AggregatorImpls {
 
-    public static class AggregableFirst<T> extends AggregableReduceOp<T, T, T> {
+    public static class AggregableFirst<T> implements IAggregableReduceOp<T, Writable> {
+
+        private T elem = null;
 
         @Override
-        public T tally(T accumulator, T element) {
-            return accumulator == null ? element : accumulator;
+        public void accept(T element) {
+            if (elem == null) elem = element;
         }
 
         @Override
-        public T combine(T accu1, T accu2) {
-            return accu1;
+        public <W extends IAggregableReduceOp<T, Writable>> void combine(W accu) {
+            // left-favoring for first
         }
 
         @Override
-        public T neutral() {
-            return null;
-        }
-
-        @Override
-        public T summarize(T acc) {
-            return acc;
+        public Writable get() {
+            return UnsafeWritableInjector.inject(elem);
         }
     }
 
-    public static class AggregableLast<T> extends AggregableReduceOp<T, T, T> {
+    public static class AggregableLast<T> implements IAggregableReduceOp<T, Writable> {
+
+        private T elem = null;
+        private Writable override = null;
 
         @Override
-        public T tally(T accumulator, T element) {
-            return element;
-        }
-
-        @Override
-        public T combine(T accu1, T accu2) {
-            return accu2;
+        public void accept(T element) {
+            if (element != null) elem = element;
         }
 
         @Override
-        public T neutral() {
-            return null;
+        public <W extends IAggregableReduceOp<T, Writable>> void combine(W accu) {
+            if (accu instanceof AggregableLast)
+                override = accu.get(); // right-favoring for last
         }
 
         @Override
-        public T summarize(T acc) {
-            return acc;
+        public Writable get() {
+            if (override == null)
+                return UnsafeWritableInjector.inject(elem);
+            else
+                return override;
         }
     }
 
-    public static class AggregableSum<T extends Number> extends AggregableReduceOp<T, Double, Writable> {
+    public static class AggregableSum<T extends Number> implements IAggregableReduceOp<T, Writable> {
 
-        public Double tally(Double accumulator, T n) {
-            return accumulator + n.doubleValue();
+        private Double sum = 0D;
+
+        @Override
+        public void accept(T element) {
+            if (element != null) sum = sum + element.doubleValue();
         }
 
-        public Double combine(Double acc1, Double acc2) {
-            return acc1 + acc2;
+        @Override
+        public <W extends IAggregableReduceOp<T, Writable>> void combine(W accu) {
+            if (accu instanceof AggregableSum)
+                sum = sum + accu.get().toDouble();
         }
 
-        public Double neutral() {
-            return 0D;
-        }
-
-        public Writable summarize(Double acc) {
-            return new DoubleWritable(acc);
-        }
-    }
-
-    public static class AggregableProd<T extends Number> extends AggregableReduceOp<T, Double, Writable> {
-
-        public Double tally(Double accumulator, T n) {
-            return accumulator * n.doubleValue();
-        }
-
-        public Double combine(Double acc1, Double acc2) {
-            return acc1 * acc2;
-        }
-
-        public Double neutral() {
-            return 1D;
-        }
-
-        public Writable summarize(Double acc) {
-            return new DoubleWritable(acc);
+        @Override
+        public Writable get() {
+            return new DoubleWritable(sum);
         }
     }
 
-    public static class AggregableCount<T> extends AggregableReduceOp<T, Long, Writable> {
+    public static class AggregableProd<T extends Number> implements IAggregableReduceOp<T, Writable> {
 
-        public Long tally(Long accumulator, T n) {
-            return accumulator + 1;
+        private Double prod = 1D;
+
+        @Override
+        public void accept(T element) {
+            if (element != null) prod = prod * element.doubleValue();
         }
 
-        public Long combine(Long acc1, Long acc2) {
-            return acc1 + acc2;
+        @Override
+        public <W extends IAggregableReduceOp<T, Writable>> void combine(W accu) {
+            if (accu instanceof AggregableProd)
+                prod = prod * accu.get().toDouble();
         }
 
-        public Long neutral() {
-            return 0L;
-        }
-
-        public Writable summarize(Long acc) {
-            return new LongWritable(acc);
+        @Override
+        public Writable get() {
+            return new DoubleWritable(prod);
         }
     }
 
-    public static class AggregableMean<T extends Number> extends AggregableReduceOp<T, Pair<Long, Double>, Writable> {
 
-        public Pair<Long, Double> tally(Pair<Long, Double> accumulator, T n) {
 
-            Long count = accumulator.getLeft();
-            Double mean = accumulator.getRight();
+
+    public static class AggregableMax<T extends Number & Comparable<T>> implements IAggregableReduceOp<T, Writable> {
+
+        @Getter
+        private T max = null;
+
+        @Override
+        public void accept(T element) {
+            if (max == null || max.compareTo(element) <  0) max = element;
+        }
+
+        @Override
+        public <W extends IAggregableReduceOp<T, Writable>> void combine(W accu) {
+            if (max == null || (accu instanceof AggregableMax && max.compareTo(((AggregableMax<T>) accu).getMax()) < 0))
+                max = ((AggregableMax<T>) accu).getMax();
+        }
+
+        @Override
+        public Writable get() {
+            return UnsafeWritableInjector.inject(max);
+        }
+    }
+
+
+    public static class AggregableMin<T extends Number & Comparable<T>> implements IAggregableReduceOp<T, Writable> {
+
+        @Getter
+        private T min = null;
+
+        @Override
+        public void accept(T element) {
+            if (min == null || min.compareTo(element) >  0) min = element;
+        }
+
+        @Override
+        public <W extends IAggregableReduceOp<T, Writable>> void combine(W accu) {
+            if (min == null || (accu instanceof AggregableMax && min.compareTo(((AggregableMin<T>) accu).getMin()) > 0))
+                min = ((AggregableMin<T>) accu).getMin();
+        }
+
+        @Override
+        public Writable get() {
+            return UnsafeWritableInjector.inject(min);
+        }
+    }
+
+    public static class AggregableRange<T extends Number & Comparable<T>> implements IAggregableReduceOp<T, Writable> {
+
+        @Getter
+        private T min = null;
+        @Getter
+        private T max = null;
+
+        @Override
+        public void accept(T element) {
+            if (min == null || min.compareTo(element) >  0) min = element;
+            if (max == null || max.compareTo(element) <  0) max = element;
+        }
+
+        @Override
+        public <W extends IAggregableReduceOp<T, Writable>> void combine(W accu) {
+            if (max == null || (accu instanceof AggregableRange && max.compareTo(((AggregableRange<T>) accu).getMax()) < 0))
+                max = ((AggregableRange<T>) accu).getMax();
+            if (min == null || (accu instanceof AggregableRange && min.compareTo(((AggregableRange<T>) accu).getMin()) > 0))
+                min = ((AggregableRange<T>) accu).getMin();
+        }
+
+
+        @Override
+        public Writable get() {
+            if (min instanceof Long)
+                return UnsafeWritableInjector.inject(max.longValue() - min.longValue());
+            else if (min instanceof Integer)
+                return UnsafeWritableInjector.inject(max.intValue() - min.intValue());
+            else if (min instanceof Float)
+                return UnsafeWritableInjector.inject(max.floatValue() - min.floatValue());
+            else if (min instanceof Double)
+                return UnsafeWritableInjector.inject(max.doubleValue() - min.doubleValue());
+            else if (min instanceof Byte)
+                return UnsafeWritableInjector.inject(max.byteValue() - min.byteValue());
+            else throw new IllegalArgumentException("Wrong type for Aggregable Range operation " + min.getClass().getName());
+        }
+    }
+
+
+    public static class AggregableCount<T> implements IAggregableReduceOp<T, Writable> {
+
+        private Long count = 0L;
+
+        @Override
+        public void accept(T element) {
+            count += 0L;
+        }
+
+        @Override
+        public <W extends IAggregableReduceOp<T, Writable>> void combine(W accu) {
+            if (accu instanceof AggregableCount)
+                count = count + accu.get().toLong();
+        }
+
+        @Override
+        public Writable get() {
+            return new LongWritable(count);
+        }
+    }
+
+    public static class AggregableMean<T extends Number> implements IAggregableReduceOp<T,Writable> {
+
+        @Getter
+        private Long count = 0L;
+        private Double mean = 0D;
+
+
+        public void accept(T n) {
 
             // See Knuth TAOCP vol 2, 3rd edition, page 232
             if (count == 0) {
-                return Pair.of(1L, n.doubleValue());
+                count = 1L;
+                mean = n.doubleValue();
             } else {
-                Long newCount = count + 1;
-                Double newMean = mean + (n.doubleValue() - mean) / newCount;
-                return Pair.of(newCount, newMean);
+                count = count + 1;
+                mean = mean + (n.doubleValue() - mean) / count;
             }
         }
 
-        public Pair<Long, Double> combine(Pair<Long, Double> acc1, Pair<Long, Double> acc2) {
-            Long totalCount = acc1.getLeft() + acc2.getLeft();
-            Double totalMean =
-                    (acc1.getRight() * acc1.getLeft() + acc2.getRight() * acc1.getLeft()) / totalCount;
-            return Pair.of(totalCount, totalMean);
+        public <U extends IAggregableReduceOp<T, Writable>> void combine(U acc) {
+            if (acc instanceof AggregableMean) {
+                Long cnt = ((AggregableMean<T>) acc).getCount();
+                Long newCount = count + cnt;
+                mean = mean * count + (acc.get().toDouble() * cnt) / newCount;
+                count = newCount;
+            }
         }
 
-        public Pair<Long, Double> neutral() {
-            return Pair.of(0L, 0D);
-        }
-
-        public Writable summarize(Pair<Long, Double> acc) {
-            return new DoubleWritable(acc.getRight());
+        public Writable get() {
+            return new DoubleWritable(mean);
         }
     }
 
-    public static class AggregableStdDev<T extends Number>
-            extends AggregableReduceOp<T, Triple<Long, Double, Double>, Writable> {
+    public static class AggregableStdDev<T extends Number> implements IAggregableReduceOp<T, Writable> {
 
-        public Triple<Long, Double, Double> tally(Triple<Long, Double, Double> accumulator, T n) {
+        @Getter
+        private Long count = 0L;
+        @Getter
+        private Double mean = 0D;
+        @Getter
+        private Double variation = 0D;
 
-            Long count = accumulator.getLeft();
-            Double mean = accumulator.getMiddle();
-            Double s = accumulator.getRight();
 
-            // See Knuth TAOCP vol 2, 3rd edition, page 232
+        public void accept(T n) {
             if (count == 0) {
-                return Triple.of(1L, n.doubleValue(), 0D);
+                count = 1L;
+                mean = n.doubleValue();
+                variation = 0D;
             } else {
                 Long newCount = count + 1;
                 Double newMean = mean + (n.doubleValue() - mean) / newCount;
-                Double newS = s + (n.doubleValue() - mean) * (n.doubleValue() - newMean);
-                return Triple.of(newCount, newMean, newS);
+                Double newvariation = variation + (n.doubleValue() - mean) * (n.doubleValue() - newMean);
+                count = newCount;
+                mean = newMean;
+                variation = newvariation;
             }
         }
 
-        public Triple<Long, Double, Double> combine(
-                Triple<Long, Double, Double> acc1, Triple<Long, Double, Double> acc2) {
-            Long totalCount = acc1.getLeft() + acc2.getLeft();
-            Double totalMean =
-                    (acc1.getMiddle() * acc1.getLeft() + acc2.getMiddle() * acc1.getLeft()) / totalCount;
-            // the variance of the union is the sum of variances
-            Double leftVariance = acc1.getRight() / (acc1.getLeft() - 1);
-            Double rightvariance = acc2.getRight() / (acc2.getLeft() - 1);
-            Double totalS = (leftVariance + rightvariance) * (totalCount - 1);
-            return Triple.of(totalCount, totalMean, totalS);
+        public <U extends IAggregableReduceOp<T, Writable>> void combine(U acc) {
+            if (acc instanceof AggregableStdDev) {
+                AggregableStdDev<T> accu = (AggregableStdDev <T>)acc;
+
+                Long totalCount = count + accu.getCount();
+                Double totalMean =
+                        (accu.getMean() * accu.getCount() + mean * count) / totalCount;
+                // the variance of the union is the sum of variances
+                Double variance = variation / (count - 1);
+                Double otherVariance = accu.getVariation() / (accu.getCount() - 1);
+                Double totalVariation = (variance + otherVariance) * (totalCount - 1);
+                count = totalCount;
+                mean = totalMean;
+                variation = variation;
+            }
         }
 
-        public Triple<Long, Double, Double> neutral() {
-            return Triple.of(0L, 0D, 0D);
-        }
-
-        public Writable summarize(Triple<Long, Double, Double> acc) {
-            return new DoubleWritable(Math.sqrt(acc.getRight() / (acc.getLeft() - 1)));
+        public Writable get() {
+            return new DoubleWritable(Math.sqrt(variation / (count - 1)));
         }
     }
 
-    public static class AggregableFunction<T> extends AggregableReduceOp<T, T, T> {
+    public static class AggregableFunction<T> implements IAggregableReduceOp<T, Writable> {
 
         private DecoratedBiFunction<T, T, T> function;
-        private T neutralElement;
+        @Getter
+        private T accumulator;
 
         public AggregableFunction(DecoratedBiFunction<T, T, T> fun, T neut) {
             function = fun;
-            neutralElement = neut;
+            accumulator = neut;
         }
 
-        public final T tally(T accumulator, T number) {
-            return function.apply(accumulator, number);
+        @Override
+        public void accept(T element) {
+            accumulator = function.apply(accumulator, element);
         }
 
-        public final T combine(T acc1, T acc2) {
-            return function.apply(acc1, acc2);
+        @Override
+        public <W extends IAggregableReduceOp<T, Writable>> void combine(W accu) {
+            if (accu.getClass().isInstance(this))
+                accumulator = ((AggregableFunction<T>)accu).getAccumulator();
         }
 
-        public final T neutral() {
-            return neutralElement;
+        @Override
+        public Writable get() {
+            return UnsafeWritableInjector.inject(accumulator);
         }
-
-        public final T summarize(T accu) { return accu; }
-
     }
 
-    public static final AggregableReduceOp<Long, Long, Long> minLong =
-            new AggregableFunction<>(
-                    new DecoratedBiFunction<Long, Long, Long>() {
-                        @Override
-                        public Long apply(Long x, Long y) {
-                            return Math.min(x, y);
-                        }
-                    },
-                    Long.MAX_VALUE);
+    public static class AggregableCountUnique<T> implements IAggregableReduceOp<T, Writable> {
 
-    public static final AggregableReduceOp<Integer, Integer, Integer> minInt =
-            new AggregableFunction<>(
-                    new DecoratedBiFunction<Integer, Integer, Integer>() {
-                        @Override
-                        public Integer apply(Integer x, Integer y) {
-                            return Math.min(x, y);
-                        }
-                    },
-                    Integer.MAX_VALUE);
-
-    public static final AggregableReduceOp<Double, Double, Double> minDouble =
-            new AggregableFunction<>(
-                    new DecoratedBiFunction<Double, Double, Double>() {
-                        @Override
-                        public Double apply(Double x, Double y) {
-                            return Math.min(x, y);
-                        }
-                    }, Double.MAX_VALUE);
-
-    public static final AggregableReduceOp<Float, Float, Float> minFloat =
-            new AggregableFunction<>(
-                    new DecoratedBiFunction<Float, Float, Float>() {
-                        @Override
-                        public Float apply(Float x, Float y) {
-                            return Math.min(x, y);
-                        }
-                    },
-                    Float.MAX_VALUE);
-
-    public static final AggregableReduceOp<Long, Long, Long> maxLong =
-            new AggregableFunction<>(
-                    new DecoratedBiFunction<Long, Long, Long>() {
-                        @Override
-                        public Long apply(Long x, Long y) {
-                            return Math.max(x, y);
-                        }
-                    }, Long.MIN_VALUE);
-
-    public static final AggregableReduceOp<Integer, Integer, Integer> maxInt =
-            new AggregableFunction<>(
-                    new DecoratedBiFunction<Integer, Integer, Integer>() {
-                        @Override
-                        public Integer apply(Integer x, Integer y) {
-                            return Math.min(x, y);
-                        }
-                    },
-                    Integer.MIN_VALUE);
-
-    public static final AggregableReduceOp<Double, Double, Double> maxDouble =
-            new AggregableFunction<>(
-                    new DecoratedBiFunction<Double, Double, Double>() {
-                        @Override
-                        public Double apply(Double x, Double y) {
-                            return Math.min(x, y);
-                        }
-                    },
-                    Double.MIN_VALUE);
-
-    public static final AggregableReduceOp<Float, Float, Float> maxFloat =
-            new AggregableFunction<>(
-                    new DecoratedBiFunction<Float, Float, Float>() {
-                        @Override
-                        public Float apply(Float x, Float y) {
-                            return Math.min(x, y);
-                        }
-                    },
-                    Float.MIN_VALUE);
-
-    public static final AggregableReduceOp<Long, Pair<Long, Long>, Long> rangeLong =
-            AggregableReduceOp.compose(minLong, maxLong).andFinally(new Function<Pair<Long, Long>, Long>() {
-                @Override
-                public Long apply(Pair<Long, Long> longLongPair) {
-                    return longLongPair.getRight() - longLongPair.getLeft();
-                }
-            });
-
-    public static final AggregableReduceOp<Integer, Pair<Integer, Integer>, Integer> rangeInt =
-            AggregableReduceOp.compose(minInt, maxInt).andFinally(new Function<Pair<Integer, Integer>, Integer>() {
-                @Override
-                public Integer apply(Pair<Integer, Integer> intIntPair) {
-                    return intIntPair.getRight() - intIntPair.getLeft();
-                }
-            });
-
-    public static final AggregableReduceOp<Double, Pair<Double, Double>, Double> rangeDouble =
-            AggregableReduceOp.compose(minDouble, maxDouble).andFinally(new Function<Pair<Double, Double>, Double>() {
-                @Override
-                public Double apply(Pair<Double, Double> doubleDoublePair) {
-                    return doubleDoublePair.getRight() - doubleDoublePair.getLeft();
-                }
-            });
-
-    public static final AggregableReduceOp<Float, Pair<Float, Float>, Float> rangeFloat =
-            AggregableReduceOp.compose(minFloat, maxFloat).andFinally(new Function<Pair<Float, Float>, Float>() {
-                @Override
-                public Float apply(Pair<Float, Float> floatFloatPair) {
-                    return floatFloatPair.getRight() - floatFloatPair.getLeft();
-                }
-            });
-
-    public static class AggregableCountUnique<T> extends AggregableReduceOp<T, HyperLogLogPlus, Writable> {
-
-        @Override
-        public HyperLogLogPlus tally(HyperLogLogPlus accumulator, T element) {
-            accumulator.offer(element);
-            return accumulator;
-        }
-
-        @Override
-        public HyperLogLogPlus combine(HyperLogLogPlus accu1, HyperLogLogPlus accu2) {
-
-            try {
-                accu1.addAll(accu2);
-            } catch (CardinalityMergeException e) {
-                throw new RuntimeException(e);
-            }
-            return accu1;
-        }
-
-        @Override
-        public HyperLogLogPlus neutral() {
         /*
          * This is based on streamlib's implementation of "HyperLogLog in Practice:
          * Algorithmic Engineering of a State of The Art Cardinality Estimation Algorithm", available
@@ -357,13 +331,29 @@ public class AggregatorImpls {
          * representation of registers, which may reduce the memory consumption
          * and increase accuracy when the cardinality is small.
          */
-            Float p = 0.05F;
-            return new HyperLogLogPlus((int) Math.ceil(2.0 * Math.log(1.054 / p) / Math.log(2)), 0);
+        private Float p = 0.05F;
+        @Getter
+        private HyperLogLogPlus hll = new HyperLogLogPlus((int) Math.ceil(2.0 * Math.log(1.054 / p) / Math.log(2)), 0);
+
+        @Override
+        public void accept(T element) {
+            hll.offer(element);
         }
 
         @Override
-        public Writable summarize(HyperLogLogPlus acc) {
-            return new LongWritable(acc.cardinality());
+        public <U extends IAggregableReduceOp<T, Writable>> void combine(U acc) {
+            if (acc instanceof AggregableCountUnique) {
+                try {
+                    hll.addAll(((AggregableCountUnique<T>) acc).getHll());
+                } catch (CardinalityMergeException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+
+        @Override
+        public Writable get() {
+            return new LongWritable(hll.cardinality());
         }
     }
 }

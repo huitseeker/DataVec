@@ -27,8 +27,7 @@ import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.metadata.DoubleMetaData;
 import org.datavec.api.transform.metadata.IntegerMetaData;
 import org.datavec.api.transform.metadata.LongMetaData;
-import org.datavec.api.transform.ops.AggregableMultiOp;
-import org.datavec.api.transform.ops.AggregatorImpls;
+import org.datavec.api.transform.ops.*;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.*;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
@@ -186,7 +185,7 @@ public class MultiOpReducer implements IAssociativeReducer {
     }
 
     @Override
-    public AggregableMultiOp<List<Writable>, List<?>> aggregableReduce() {
+    public IAggregableReduceOp<List<Writable>, List<Writable>> aggregableReduce() {
         //Go through each writable, and reduce according to whatever strategy is specified
 
         if (schema == null)
@@ -195,12 +194,13 @@ public class MultiOpReducer implements IAssociativeReducer {
         int nCols = schema.numColumns();
         List<String> colNames = schema.getColumnNames();
 
-        List<AggregableMultiOp<Writable, ?>> ops = new ArrayList<>(nCols);
+        List<IAggregableReduceOp<Writable, List<Writable>>> ops = new ArrayList<>(nCols);
 
         for (int i = 0; i < nCols; i++) {
             String colName = colNames.get(i);
             if (keyColumnsSet != null && keyColumnsSet.contains(colName)) {
-                ops.add(AggregableMultiOp.fromOp(new AggregatorImpls.AggregableFirst()));
+                IAggregableReduceOp<Writable, Writable> first = new AggregatorImpls.AggregableFirst<>();
+                ops.add(new AggregableMultiOp<>(Collections.singletonList(first)));
                 continue;
             }
 
@@ -225,10 +225,10 @@ public class MultiOpReducer implements IAssociativeReducer {
 
         }
 
-        return AggregableMultiOp.parallel(ops);
+        return new DispatchOp<>(ops);
     }
 
-    public static AggregableMultiOp<Writable, ?> reduceColumn(List<ReduceOp> op, ColumnType type) {
+    public static IAggregableReduceOp<Writable, List<Writable>> reduceColumn(List<ReduceOp> op, ColumnType type) {
         switch (type) {
             case Integer:
                 return reduceIntColumn(op);
@@ -250,518 +250,197 @@ public class MultiOpReducer implements IAssociativeReducer {
         }
     }
 
-    public static AggregableMultiOp<Writable, ?> reduceIntColumn(List<ReduceOp> lop) {
+    public static IAggregableReduceOp<Writable, List<Writable>> reduceIntColumn(List<ReduceOp> lop) {
 
-        Function<Integer, Writable> toWritable = new Function<Integer, Writable>(){
-
-            @Override
-            public Writable apply(Integer anInt) {
-                return new IntWritable(anInt);
-            }
-        };
-
-        AggregableMultiOp<Writable, ?> res = null;
+        List<IAggregableReduceOp<Integer, Writable>> res = new ArrayList<>(lop.size());
         for (int i = 0; i < lop.size(); i++){
             switch (lop.get(i)) {
                 case Min:
-                    AggregableMultiOp<Writable, Integer> minOp = AggregableMultiOp.toIntWritable(AggregableMultiOp.fromOp(AggregatorImpls.minInt.andFinally(toWritable)));
-                    if (res == null)
-                        res = minOp;
-                    else {
-                        res = res.andThen(minOp);
-                    }
+                    res.add(new AggregatorImpls.AggregableMin<Integer>());
                 case Max:
-                    AggregableMultiOp<Writable, Integer> maxOp = AggregableMultiOp.toIntWritable(AggregableMultiOp.fromOp(AggregatorImpls.maxInt.andFinally(toWritable)));
-                    if (res == null)
-                        res = maxOp;
-                    else {
-                        res = res.andThen(maxOp);
-                    }
+                    res.add(new AggregatorImpls.AggregableMax<Integer>());
                 case Range:
-                    AggregableMultiOp<Writable, Pair<Integer, Integer>> rangeOp = AggregableMultiOp.toIntWritable(AggregableMultiOp.fromOp(AggregatorImpls.rangeInt.andFinally(toWritable)));
-                    if (res == null)
-                        res = rangeOp;
-                    else {
-                        res = res.andThen(rangeOp);
-                    }
+                    res.add(new AggregatorImpls.AggregableRange<Integer>());
                 case Sum:
-                    AggregableMultiOp<Writable, Double> sumOp = AggregableMultiOp.toIntWritable(AggregableMultiOp.fromOp(new AggregatorImpls.AggregableSum()));
-                    if (res == null)
-                        res = sumOp;
-                    else {
-                        res = res.andThen(sumOp);
-                    }
+                    res.add(new AggregatorImpls.AggregableSum<Integer>());
                 case Mean:
-                    AggregableMultiOp<Writable, Pair<Integer, Double>> meanOp = AggregableMultiOp.toIntWritable(AggregableMultiOp.fromOp(new AggregatorImpls.AggregableMean()));
-                    if (res == null)
-                        res = meanOp;
-                    else {
-                        res = res.andThen(meanOp);
-                    }
+                    res.add(new AggregatorImpls.AggregableMean<Integer>());
                 case Stdev:
-                    AggregableMultiOp<Writable, Triple<Integer, Double, Double>> stdDevOp = AggregableMultiOp.toIntWritable(AggregableMultiOp.fromOp(new AggregatorImpls.AggregableStdDev()));
-                    if (res == null)
-                        res = stdDevOp;
-                    else {
-                        res = res.andThen(stdDevOp);
-                    }
+                    res.add(new AggregatorImpls.AggregableStdDev<Integer>());
                 case Count:
-                    AggregableMultiOp<Writable, Long> countOp = AggregableMultiOp.toIntWritable(AggregableMultiOp.fromOp(new AggregatorImpls.AggregableCount<Integer>()));
-                    if (res == null)
-                        res = countOp;
-                    else {
-                        res = res.andThen(countOp);
-                    }
+                    res.add(new AggregatorImpls.AggregableCount<Integer>());
                 case CountUnique:
-                    AggregableMultiOp<Writable, HyperLogLogPlus> countDistinctOp = AggregableMultiOp.toIntWritable(AggregableMultiOp.fromOp(new AggregatorImpls.AggregableCountUnique<Integer>()));
-                    if (res == null)
-                        res = countDistinctOp;
-                    else {
-                        res = res.andThen(countDistinctOp);
-                    }
+                    res.add(new AggregatorImpls.AggregableCountUnique<Integer>());
                 case TakeFirst:
-                    AggregableMultiOp<Writable, Integer> takeFirstOp = AggregableMultiOp.toIntWritable(AggregableMultiOp.fromOp((new AggregatorImpls.AggregableFirst<Integer>()).andFinally(toWritable)));
-                    if (res == null)
-                        res = takeFirstOp;
-                    else {
-                        res = res.andThen(takeFirstOp);
-                    }
+                    res.add(new AggregatorImpls.AggregableFirst<Integer>());
                 case TakeLast:
-                    AggregableMultiOp<Writable, Integer> takeLastOp = AggregableMultiOp.toIntWritable(AggregableMultiOp.fromOp((new AggregatorImpls.AggregableLast<Integer>()).andFinally(toWritable)));
-                    if (res == null)
-                        res = takeLastOp;
-                    else {
-                        res = res.andThen(takeLastOp);
-                    }
+                    res.add(new AggregatorImpls.AggregableLast<Integer>());
                 default:
                     throw new UnsupportedOperationException("Unknown or not implement op: " + lop.get(i));
             }
         }
-        return res;
+        return new IntWritableOp<>(new AggregableMultiOp<>(res));
     }
 
-    public static AggregableMultiOp<Writable, ?> reduceLongColumn(List<ReduceOp> lop) {
+    public static IAggregableReduceOp<Writable, List<Writable>> reduceLongColumn(List<ReduceOp> lop) {
 
-        Function<Long, Writable> toWritable = new Function<Long, Writable>(){
-
-            @Override
-            public Writable apply(Long aLong) {
-                return new LongWritable(aLong);
-            }
-        };
-
-        AggregableMultiOp<Writable, ?> res = null;
-        for (int i = 0; i < lop.size(); i++){
-        switch (lop.get(i)) {
-            case Min:
-                AggregableMultiOp<Writable, Long> minOp = AggregableMultiOp.toLongWritable(AggregableMultiOp.fromOp(AggregatorImpls.minLong.andFinally(toWritable)));
-                if (res == null)
-                    res = minOp;
-                else {
-                    res = res.andThen(minOp);
-                }
-            case Max:
-                AggregableMultiOp<Writable, Long> maxOp = AggregableMultiOp.toLongWritable(AggregableMultiOp.fromOp(AggregatorImpls.maxLong.andFinally(toWritable)));
-                if (res == null)
-                    res = maxOp;
-                else {
-                    res = res.andThen(maxOp);
-                }
-            case Range:
-                AggregableMultiOp<Writable, Pair<Long, Long>> rangeOp = AggregableMultiOp.toLongWritable(AggregableMultiOp.fromOp(AggregatorImpls.rangeLong.andFinally(toWritable)));
-                if (res == null)
-                    res = rangeOp;
-                else {
-                    res = res.andThen(rangeOp);
-                }
-            case Sum:
-                AggregableMultiOp<Writable, Double> sumOp = AggregableMultiOp.toLongWritable(AggregableMultiOp.fromOp(new AggregatorImpls.AggregableSum()));
-                if (res == null)
-                    res = sumOp;
-                else {
-                    res = res.andThen(sumOp);
-                }
-            case Mean:
-                AggregableMultiOp<Writable, Pair<Long, Double>> meanOp = AggregableMultiOp.toLongWritable(AggregableMultiOp.fromOp(new AggregatorImpls.AggregableMean()));
-                if (res == null)
-                    res = meanOp;
-                else {
-                    res = res.andThen(meanOp);
-                }
-            case Stdev:
-                AggregableMultiOp<Writable, Triple<Long, Double, Double>> stdDevOp = AggregableMultiOp.toLongWritable(AggregableMultiOp.fromOp(new AggregatorImpls.AggregableStdDev()));
-                if (res == null)
-                    res = stdDevOp;
-                else {
-                    res = res.andThen(stdDevOp);
-                }
-            case Count:
-                AggregableMultiOp<Writable, Long> countOp = AggregableMultiOp.toLongWritable(AggregableMultiOp.fromOp(new AggregatorImpls.AggregableCount<Long>()));
-                if (res == null)
-                    res = countOp;
-                else {
-                    res = res.andThen(countOp);
-                }
-            case CountUnique:
-                AggregableMultiOp<Writable, HyperLogLogPlus> countDistinctOp = AggregableMultiOp.toLongWritable(AggregableMultiOp.fromOp(new AggregatorImpls.AggregableCountUnique<Long>()));
-                if (res == null)
-                    res = countDistinctOp;
-                else {
-                    res = res.andThen(countDistinctOp);
-                }
-            case TakeFirst:
-                AggregableMultiOp<Writable, Long> takeFirstOp = AggregableMultiOp.toLongWritable(AggregableMultiOp.fromOp((new AggregatorImpls.AggregableFirst<Long>()).andFinally(toWritable)));
-                if (res == null)
-                    res = takeFirstOp;
-                else {
-                    res = res.andThen(takeFirstOp);
-                }
-            case TakeLast:
-                AggregableMultiOp<Writable, Long> takeLastOp = AggregableMultiOp.toLongWritable(AggregableMultiOp.fromOp((new AggregatorImpls.AggregableLast<Long>()).andFinally(toWritable)));
-                if (res == null)
-                    res = takeLastOp;
-                else {
-                    res = res.andThen(takeLastOp);
-                }
-            default:
-                throw new UnsupportedOperationException("Unknown or not implement op: " + lop.get(i));
-        }
-        }
-        return res;
-    }
-
-    public static AggregableMultiOp<Writable, ?> reduceDoubleColumn(List<ReduceOp> lop) {
-
-        Function<Double, Writable> toWritable = new Function<Double, Writable>(){
-
-            @Override
-            public Writable apply(Double aDouble) {
-                return new DoubleWritable(aDouble);
-            }
-        };
-
-        AggregableMultiOp<Writable, ?> res = null;
+        List<IAggregableReduceOp<Long, Writable>> res = new ArrayList<>(lop.size());
         for (int i = 0; i < lop.size(); i++){
             switch (lop.get(i)) {
                 case Min:
-                    AggregableMultiOp<Writable, Double> minOp = AggregableMultiOp.toDoubleWritable(AggregableMultiOp.fromOp(AggregatorImpls.minDouble.andFinally(toWritable)));
-                    if (res == null)
-                        res = minOp;
-                    else {
-                        res = res.andThen(minOp);
-                    }
+                    res.add(new AggregatorImpls.AggregableMin<Long>());
                 case Max:
-                    AggregableMultiOp<Writable, Double> maxOp = AggregableMultiOp.toDoubleWritable(AggregableMultiOp.fromOp(AggregatorImpls.maxDouble.andFinally(toWritable)));
-                    if (res == null)
-                        res = maxOp;
-                    else {
-                        res = res.andThen(maxOp);
-                    }
+                    res.add(new AggregatorImpls.AggregableMax<Long>());
                 case Range:
-                    AggregableMultiOp<Writable, Pair<Double, Double>> rangeOp = AggregableMultiOp.toDoubleWritable(AggregableMultiOp.fromOp(AggregatorImpls.rangeDouble.andFinally(toWritable)));
-                    if (res == null)
-                        res = rangeOp;
-                    else {
-                        res = res.andThen(rangeOp);
-                    }
+                    res.add(new AggregatorImpls.AggregableRange<Long>());
                 case Sum:
-                    AggregableMultiOp<Writable, Double> sumOp = AggregableMultiOp.toDoubleWritable(AggregableMultiOp.fromOp(new AggregatorImpls.AggregableSum()));
-                    if (res == null)
-                        res = sumOp;
-                    else {
-                        res = res.andThen(sumOp);
-                    }
+                    res.add(new AggregatorImpls.AggregableSum<Long>());
                 case Mean:
-                    AggregableMultiOp<Writable, Pair<Double, Double>> meanOp = AggregableMultiOp.toDoubleWritable(AggregableMultiOp.fromOp(new AggregatorImpls.AggregableMean()));
-                    if (res == null)
-                        res = meanOp;
-                    else {
-                        res = res.andThen(meanOp);
-                    }
+                    res.add(new AggregatorImpls.AggregableMean<Long>());
                 case Stdev:
-                    AggregableMultiOp<Writable, Triple<Double, Double, Double>> stdDevOp = AggregableMultiOp.toDoubleWritable(AggregableMultiOp.fromOp(new AggregatorImpls.AggregableStdDev()));
-                    if (res == null)
-                        res = stdDevOp;
-                    else {
-                        res = res.andThen(stdDevOp);
-                    }
+                    res.add(new AggregatorImpls.AggregableStdDev<Long>());
                 case Count:
-                    AggregableMultiOp<Writable, Long> countOp = AggregableMultiOp.toDoubleWritable(AggregableMultiOp.fromOp(new AggregatorImpls.AggregableCount<Double>()));
-                    if (res == null)
-                        res = countOp;
-                    else {
-                        res = res.andThen(countOp);
-                    }
+                    res.add(new AggregatorImpls.AggregableCount<Long>());
                 case CountUnique:
-                    AggregableMultiOp<Writable, HyperLogLogPlus> countDistinctOp = AggregableMultiOp.toDoubleWritable(AggregableMultiOp.fromOp(new AggregatorImpls.AggregableCountUnique<Double>()));
-                    if (res == null)
-                        res = countDistinctOp;
-                    else {
-                        res = res.andThen(countDistinctOp);
-                    }
+                    res.add(new AggregatorImpls.AggregableCountUnique<Long>());
                 case TakeFirst:
-                    AggregableMultiOp<Writable, Double> takeFirstOp = AggregableMultiOp.toDoubleWritable(AggregableMultiOp.fromOp((new AggregatorImpls.AggregableFirst<Double>()).andFinally(toWritable)));
-                    if (res == null)
-                        res = takeFirstOp;
-                    else {
-                        res = res.andThen(takeFirstOp);
-                    }
+                    res.add(new AggregatorImpls.AggregableFirst<Long>());
                 case TakeLast:
-                    AggregableMultiOp<Writable, Double> takeLastOp = AggregableMultiOp.toDoubleWritable(AggregableMultiOp.fromOp((new AggregatorImpls.AggregableLast<Double>()).andFinally(toWritable)));
-                    if (res == null)
-                        res = takeLastOp;
-                    else {
-                        res = res.andThen(takeLastOp);
-                    }
+                    res.add(new AggregatorImpls.AggregableLast<Long>());
                 default:
                     throw new UnsupportedOperationException("Unknown or not implement op: " + lop.get(i));
             }
         }
-        return res;
+        return new LongWritableOp<>(new AggregableMultiOp<>(res));
     }
 
-    public static AggregableMultiOp<Writable, ?> reduceFloatColumn(List<ReduceOp> lop) {
+    public static IAggregableReduceOp<Writable, List<Writable>> reduceFloatColumn(List<ReduceOp> lop) {
 
-        Function<Float, Writable> toWritable = new Function<Float, Writable>(){
-
-            @Override
-            public Writable apply(Float aFloat) {
-                return new FloatWritable(aFloat);
-            }
-        };
-
-        AggregableMultiOp<Writable, ?> res = null;
+        List<IAggregableReduceOp<Float, Writable>> res = new ArrayList<>(lop.size());
         for (int i = 0; i < lop.size(); i++){
             switch (lop.get(i)) {
                 case Min:
-                    AggregableMultiOp<Writable, Float> minOp = AggregableMultiOp.toFloatWritable(AggregableMultiOp.fromOp(AggregatorImpls.minFloat.andFinally(toWritable)));
-                    if (res == null)
-                        res = minOp;
-                    else {
-                        res = res.andThen(minOp);
-                    }
+                    res.add(new AggregatorImpls.AggregableMin<Float>());
                 case Max:
-                    AggregableMultiOp<Writable, Float> maxOp = AggregableMultiOp.toFloatWritable(AggregableMultiOp.fromOp(AggregatorImpls.maxFloat.andFinally(toWritable)));
-                    if (res == null)
-                        res = maxOp;
-                    else {
-                        res = res.andThen(maxOp);
-                    }
+                    res.add(new AggregatorImpls.AggregableMax<Float>());
                 case Range:
-                    AggregableMultiOp<Writable, Pair<Float, Float>> rangeOp = AggregableMultiOp.toFloatWritable(AggregableMultiOp.fromOp(AggregatorImpls.rangeFloat.andFinally(toWritable)));
-                    if (res == null)
-                        res = rangeOp;
-                    else {
-                        res = res.andThen(rangeOp);
-                    }
+                    res.add(new AggregatorImpls.AggregableRange<Float>());
                 case Sum:
-                    AggregableMultiOp<Writable, Float> sumOp = AggregableMultiOp.toFloatWritable(AggregableMultiOp.fromOp(new AggregatorImpls.AggregableSum()));
-                    if (res == null)
-                        res = sumOp;
-                    else {
-                        res = res.andThen(sumOp);
-                    }
+                    res.add(new AggregatorImpls.AggregableSum<Float>());
                 case Mean:
-                    AggregableMultiOp<Writable, Pair<Float, Float>> meanOp = AggregableMultiOp.toFloatWritable(AggregableMultiOp.fromOp(new AggregatorImpls.AggregableMean()));
-                    if (res == null)
-                        res = meanOp;
-                    else {
-                        res = res.andThen(meanOp);
-                    }
+                    res.add(new AggregatorImpls.AggregableMean<Float>());
                 case Stdev:
-                    AggregableMultiOp<Writable, Triple<Float, Float, Float>> stdDevOp = AggregableMultiOp.toFloatWritable(AggregableMultiOp.fromOp(new AggregatorImpls.AggregableStdDev()));
-                    if (res == null)
-                        res = stdDevOp;
-                    else {
-                        res = res.andThen(stdDevOp);
-                    }
+                    res.add(new AggregatorImpls.AggregableStdDev<Float>());
                 case Count:
-                    AggregableMultiOp<Writable, Long> countOp = AggregableMultiOp.toFloatWritable(AggregableMultiOp.fromOp(new AggregatorImpls.AggregableCount<Float>()));
-                    if (res == null)
-                        res = countOp;
-                    else {
-                        res = res.andThen(countOp);
-                    }
+                    res.add(new AggregatorImpls.AggregableCount<Float>());
                 case CountUnique:
-                    AggregableMultiOp<Writable, HyperLogLogPlus> countDistinctOp = AggregableMultiOp.toFloatWritable(AggregableMultiOp.fromOp(new AggregatorImpls.AggregableCountUnique<Float>()));
-                    if (res == null)
-                        res = countDistinctOp;
-                    else {
-                        res = res.andThen(countDistinctOp);
-                    }
+                    res.add(new AggregatorImpls.AggregableCountUnique<Float>());
                 case TakeFirst:
-                    AggregableMultiOp<Writable, Float> takeFirstOp = AggregableMultiOp.toFloatWritable(AggregableMultiOp.fromOp((new AggregatorImpls.AggregableFirst<Float>()).andFinally(toWritable)));
-                    if (res == null)
-                        res = takeFirstOp;
-                    else {
-                        res = res.andThen(takeFirstOp);
-                    }
+                    res.add(new AggregatorImpls.AggregableFirst<Float>());
                 case TakeLast:
-                    AggregableMultiOp<Writable, Float> takeLastOp = AggregableMultiOp.toFloatWritable(AggregableMultiOp.fromOp((new AggregatorImpls.AggregableLast<Float>()).andFinally(toWritable)));
-                    if (res == null)
-                        res = takeLastOp;
-                    else {
-                        res = res.andThen(takeLastOp);
-                    }
+                    res.add(new AggregatorImpls.AggregableLast<Float>());
                 default:
                     throw new UnsupportedOperationException("Unknown or not implement op: " + lop.get(i));
             }
         }
-        return res;
+        return new FloatWritableOp<>(new AggregableMultiOp<>(res));
     }
 
+    public static IAggregableReduceOp<Writable, List<Writable>> reduceDoubleColumn(List<ReduceOp> lop) {
 
-    public static AggregableMultiOp<Writable, ?> reduceStringOrCategoricalColumn(List<ReduceOp> lop) {
-
-        Function<String, Writable> toWritable = new Function<String, Writable>(){
-
-            @Override
-            public Writable apply(String aString) {
-                return new Text(aString);
+        List<IAggregableReduceOp<Double, Writable>> res = new ArrayList<>(lop.size());
+        for (int i = 0; i < lop.size(); i++){
+            switch (lop.get(i)) {
+                case Min:
+                    res.add(new AggregatorImpls.AggregableMin<Double>());
+                case Max:
+                    res.add(new AggregatorImpls.AggregableMax<Double>());
+                case Range:
+                    res.add(new AggregatorImpls.AggregableRange<Double>());
+                case Sum:
+                    res.add(new AggregatorImpls.AggregableSum<Double>());
+                case Mean:
+                    res.add(new AggregatorImpls.AggregableMean<Double>());
+                case Stdev:
+                    res.add(new AggregatorImpls.AggregableStdDev<Double>());
+                case Count:
+                    res.add(new AggregatorImpls.AggregableCount<Double>());
+                case CountUnique:
+                    res.add(new AggregatorImpls.AggregableCountUnique<Double>());
+                case TakeFirst:
+                    res.add(new AggregatorImpls.AggregableFirst<Double>());
+                case TakeLast:
+                    res.add(new AggregatorImpls.AggregableLast<Double>());
+                default:
+                    throw new UnsupportedOperationException("Unknown or not implement op: " + lop.get(i));
             }
-        };
+        }
+        return new DoubleWritableOp<>(new AggregableMultiOp<>(res));
+    }
 
-        AggregableMultiOp<Writable, ?> res = null;
+    public static IAggregableReduceOp<Writable, List<Writable>> reduceStringOrCategoricalColumn(List<ReduceOp> lop) {
+
+        List<IAggregableReduceOp<String, Writable>> res = new ArrayList<>(lop.size());
         for (int i = 0; i < lop.size(); i++){
             switch (lop.get(i)) {
                 case Count:
-                    AggregableMultiOp<Writable, Long> countOp = AggregableMultiOp.toStringWritable(AggregableMultiOp.fromOp(new AggregatorImpls.AggregableCount<String>()));
-                    if (res == null)
-                        res = countOp;
-                    else {
-                        res = res.andThen(countOp);
-                    }
+                    res.add(new AggregatorImpls.AggregableCount<String>());
                 case CountUnique:
-                    AggregableMultiOp<Writable, HyperLogLogPlus> countDistinctOp = AggregableMultiOp.toStringWritable(AggregableMultiOp.fromOp(new AggregatorImpls.AggregableCountUnique<String>()));
-                    if (res == null)
-                        res = countDistinctOp;
-                    else {
-                        res = res.andThen(countDistinctOp);
-                    }
+                    res.add(new AggregatorImpls.AggregableCountUnique<String>());
                 case TakeFirst:
-                    AggregableMultiOp<Writable, String> takeFirstOp = AggregableMultiOp.toStringWritable(AggregableMultiOp.fromOp((new AggregatorImpls.AggregableFirst<String>()).andFinally(toWritable)));
-                    if (res == null)
-                        res = takeFirstOp;
-                    else {
-                        res = res.andThen(takeFirstOp);
-                    }
+                    res.add(new AggregatorImpls.AggregableFirst<String>());
                 case TakeLast:
-                    AggregableMultiOp<Writable, String> takeLastOp = AggregableMultiOp.toStringWritable(AggregableMultiOp.fromOp((new AggregatorImpls.AggregableLast<String>()).andFinally(toWritable)));
-                    if (res == null)
-                        res = takeLastOp;
-                    else {
-                        res = res.andThen(takeLastOp);
-                    }
+                    res.add(new AggregatorImpls.AggregableLast<String>());
                 default:
                     throw new UnsupportedOperationException("Cannot execute op \"" + lop.get(i) + "\" on String/Categorical column "
                             + "(can only perform Count, CountUnique, TakeFirst and TakeLast ops on categorical columns)");
             }
         }
-        return res;
+
+        return new StringWritableOp<>(new AggregableMultiOp<>(res));
     }
 
-    public static AggregableMultiOp<Writable, ?> reduceTimeColumn(List<ReduceOp> lop) {
+    public static IAggregableReduceOp<Writable, List<Writable>> reduceTimeColumn(List<ReduceOp> lop) {
 
-        Function<Long, Writable> toWritable = new Function<Long, Writable>(){
-
-            @Override
-            public Writable apply(Long aLong) {
-                return new LongWritable(aLong);
-            }
-        };
-
-        AggregableMultiOp<Writable, ?> res = null;
+        List<IAggregableReduceOp<Long, Writable>> res = new ArrayList<>(lop.size());
         for (int i = 0; i < lop.size(); i++){
             switch (lop.get(i)) {
                 case Min:
-                    AggregableMultiOp<Writable, Long> minOp = AggregableMultiOp.toLongWritable(AggregableMultiOp.fromOp(AggregatorImpls.minLong.andFinally(toWritable)));
-                    if (res == null)
-                        res = minOp;
-                    else {
-                        res = res.andThen(minOp);
-                    }
+                    res.add(new AggregatorImpls.AggregableMin<Long>());
                 case Max:
-                    AggregableMultiOp<Writable, Long> maxOp = AggregableMultiOp.toLongWritable(AggregableMultiOp.fromOp(AggregatorImpls.maxLong.andFinally(toWritable)));
-                    if (res == null)
-                        res = maxOp;
-                    else {
-                        res = res.andThen(maxOp);
-                    }
+                    res.add(new AggregatorImpls.AggregableMax<Long>());
                 case Mean:
-                    AggregableMultiOp<Writable, Pair<Long, Double>> meanOp = AggregableMultiOp.toLongWritable(AggregableMultiOp.fromOp(new AggregatorImpls.AggregableMean()));
-                    if (res == null)
-                        res = meanOp;
-                    else {
-                        res = res.andThen(meanOp);
-                    }
+                    res.add(new AggregatorImpls.AggregableMean<Long>());
                 case Count:
-                    AggregableMultiOp<Writable, Long> countOp = AggregableMultiOp.toLongWritable(AggregableMultiOp.fromOp(new AggregatorImpls.AggregableCount<Long>()));
-                    if (res == null)
-                        res = countOp;
-                    else {
-                        res = res.andThen(countOp);
-                    }
+                    res.add(new AggregatorImpls.AggregableCount<Long>());
                 case CountUnique:
-                    AggregableMultiOp<Writable, HyperLogLogPlus> countDistinctOp = AggregableMultiOp.toLongWritable(AggregableMultiOp.fromOp(new AggregatorImpls.AggregableCountUnique<Long>()));
-                    if (res == null)
-                        res = countDistinctOp;
-                    else {
-                        res = res.andThen(countDistinctOp);
-                    }
+                    res.add(new AggregatorImpls.AggregableCountUnique<Long>());
                 case TakeFirst:
-                    AggregableMultiOp<Writable, Long> takeFirstOp = AggregableMultiOp.toLongWritable(AggregableMultiOp.fromOp((new AggregatorImpls.AggregableFirst<Long>()).andFinally(toWritable)));
-                    if (res == null)
-                        res = takeFirstOp;
-                    else {
-                        res = res.andThen(takeFirstOp);
-                    }
+                    res.add(new AggregatorImpls.AggregableFirst<Long>());
                 case TakeLast:
-                    AggregableMultiOp<Writable, Long> takeLastOp = AggregableMultiOp.toLongWritable(AggregableMultiOp.fromOp((new AggregatorImpls.AggregableLast<Long>()).andFinally(toWritable)));
-                    if (res == null)
-                        res = takeLastOp;
-                    else {
-                        res = res.andThen(takeLastOp);
-                    }
+                    res.add(new AggregatorImpls.AggregableLast<Long>());
                 default:
                     throw new UnsupportedOperationException("Reduction op \"" + lop.get(i) + "\" not supported on time columns");
             }
         }
-        return res;
+        return new LongWritableOp<>(new AggregableMultiOp<>(res));
     }
 
-    public static AggregableMultiOp<Writable, ?> reduceBytesColumn(List<ReduceOp> lop) {
+    public static IAggregableReduceOp<Writable, List<Writable>> reduceBytesColumn(List<ReduceOp> lop) {
 
-        Function<Byte, Writable> toWritable = new Function<Byte, Writable>(){
-
-            @Override
-            public Writable apply(Byte aByte) {
-                return new ByteWritable(aByte);
-            }
-        };
-
-        AggregableMultiOp<Writable, ?> res = null;
+        List<IAggregableReduceOp<Byte, Writable>> res = new ArrayList<>(lop.size());
         for (int i = 0; i < lop.size(); i++){
             switch (lop.get(i)) {
                 case TakeFirst:
-                    AggregableMultiOp<Writable, Byte> takeFirstOp = AggregableMultiOp.toByteWritable(AggregableMultiOp.fromOp((new AggregatorImpls.AggregableFirst<Byte>()).andFinally(toWritable)));
-                    if (res == null)
-                        res = takeFirstOp;
-                    else {
-                        res = res.andThen(takeFirstOp);
-                    }
+                    res.add(new AggregatorImpls.AggregableFirst<Byte>());
                 case TakeLast:
-                    AggregableMultiOp<Writable, Byte> takeLastOp = AggregableMultiOp.toByteWritable(AggregableMultiOp.fromOp((new AggregatorImpls.AggregableLast<Byte>()).andFinally(toWritable)));
-                    if (res == null)
-                        res = takeLastOp;
-                    else {
-                        res = res.andThen(takeLastOp);
-                    }
+                    res.add(new AggregatorImpls.AggregableLast<Byte>());
                 default:
                     throw new UnsupportedOperationException("Cannot execute op \"" + lop.get(i) + "\" on String/Categorical column "
                             + "(can only perform Count, CountUnique, TakeFirst and TakeLast ops on categorical columns)");
             }
         }
-        return res;
+        return new ByteWritableOp<>(new AggregableMultiOp<>(res));
     }
 
     @Override

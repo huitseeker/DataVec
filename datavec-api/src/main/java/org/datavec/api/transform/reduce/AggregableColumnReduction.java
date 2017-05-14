@@ -19,6 +19,7 @@ package org.datavec.api.transform.reduce;
 import org.datavec.api.transform.ColumnOp;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.ops.AggregableMultiOp;
+import org.datavec.api.transform.ops.IAggregableReduceOp;
 import org.datavec.api.writable.Writable;
 
 import java.io.Serializable;
@@ -42,7 +43,7 @@ public interface AggregableColumnReduction extends Serializable, ColumnOp {
      * @param columnData The Writable objects for a column
      * @return Writable containing the reduced data
      */
-    AggregableMultiOp<Writable, List<Writable>> reduceOp();
+    IAggregableReduceOp<Writable, List<Writable>> reduceOp();
 
     /**
      * Post-reduce: what is the name of the column?

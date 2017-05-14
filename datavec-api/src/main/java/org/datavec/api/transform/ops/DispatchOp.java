@@ -13,6 +13,7 @@ import java.util.List;
 @AllArgsConstructor
 public class DispatchOp<T, U> implements IAggregableReduceOp<List<T>, List<U>> {
 
+
     @Getter
     @NonNull
     private List<IAggregableReduceOp<T, List<U>>> operations;

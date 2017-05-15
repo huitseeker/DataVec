@@ -4,12 +4,9 @@ import com.clearspring.analytics.stream.cardinality.CardinalityMergeException;
 import com.clearspring.analytics.stream.cardinality.HyperLogLogPlus;
 import lombok.Getter;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.commons.lang3.tuple.Triple;
 import org.datavec.api.writable.*;
 
 import java.io.WriteAbortedException;
-import java.util.function.Function;
-import java.util.function.Supplier;
 
 /**
  * Created by huitseeker on 4/28/17.
@@ -288,34 +285,6 @@ public class AggregatorImpls {
 
         public Writable get() {
             return new DoubleWritable(Math.sqrt(variation / (count - 1)));
-        }
-    }
-
-    public static class AggregableFunction<T> implements IAggregableReduceOp<T, Writable> {
-
-        private DecoratedBiFunction<T, T, T> function;
-        @Getter
-        private T accumulator;
-
-        public AggregableFunction(DecoratedBiFunction<T, T, T> fun, T neut) {
-            function = fun;
-            accumulator = neut;
-        }
-
-        @Override
-        public void accept(T element) {
-            accumulator = function.apply(accumulator, element);
-        }
-
-        @Override
-        public <W extends IAggregableReduceOp<T, Writable>> void combine(W accu) {
-            if (accu.getClass().isInstance(this))
-                accumulator = ((AggregableFunction<T>)accu).getAccumulator();
-        }
-
-        @Override
-        public Writable get() {
-            return UnsafeWritableInjector.inject(accumulator);
         }
     }
 

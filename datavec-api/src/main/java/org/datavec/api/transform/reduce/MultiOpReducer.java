@@ -34,7 +34,6 @@ import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.*;
-import java.util.function.Function;
 
 /**
  * A StringReducer is used to take a set of examples and reduce them.

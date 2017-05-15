@@ -1,7 +1,5 @@
 package org.datavec.api.writable;
 
-import java.util.function.Supplier;
-
 /**
  * Created by huitseeker on 5/13/17.
  */

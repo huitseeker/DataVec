@@ -15,6 +15,8 @@ public class UnsafeWritableInjector {
             return new DoubleWritable((Double) x);
         } else if (x instanceof String) {
             return new Text((String) x);
+        } else if (x instanceof Text) {
+            return (Text)x;
         } else if (x instanceof Byte) {
             return  new ByteWritable((Byte) x);
         } else if (x == null){

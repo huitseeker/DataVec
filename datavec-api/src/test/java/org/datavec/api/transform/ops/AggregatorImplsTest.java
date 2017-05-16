@@ -196,6 +196,58 @@ public class AggregatorImplsTest {
     }
 
     @Test
+    public void AggregableVariance(){
+        AggregatorImpls.AggregableVariance<Integer> sd = new AggregatorImpls.AggregableVariance<>();
+        for (int i = 0; i < intList.size(); i++){
+            sd.accept(intList.get(i));
+        }
+        assertTrue(Math.abs(sd.get().toDouble() - 60D/8) < 0.0001);
+
+
+        AggregatorImpls.AggregableMean<Integer> reverse = new AggregatorImpls.AggregableMean<>();
+        for (int i = 0; i < intList.size(); i++){
+            reverse.accept(intList.get(intList.size() - i - 1));
+        }
+        sd.combine(reverse);
+        assertTrue(Math.abs(sd.get().toDouble() - 60D/8) < 0.0001);
+    }
+
+    @Test
+    public void AggregableUncorrectedStdDevTest(){
+        AggregatorImpls.AggregableUncorrectedStdDev<Integer> sd = new AggregatorImpls.AggregableUncorrectedStdDev<>();
+        for (int i = 0; i < intList.size(); i++){
+            sd.accept(intList.get(i));
+        }
+        assertTrue(Math.abs(sd.get().toDouble() - 2.582) < 0.0001);
+
+
+        AggregatorImpls.AggregableMean<Integer> reverse = new AggregatorImpls.AggregableMean<>();
+        for (int i = 0; i < intList.size(); i++){
+            reverse.accept(intList.get(intList.size() - i - 1));
+        }
+        sd.combine(reverse);
+        assertTrue(Math.abs(sd.get().toDouble() - 2.582) < 0.0001);
+    }
+
+
+    @Test
+    public void AggregablePopulationVariance(){
+        AggregatorImpls.AggregablePopulationVariance<Integer> sd = new AggregatorImpls.AggregablePopulationVariance<>();
+        for (int i = 0; i < intList.size(); i++){
+            sd.accept(intList.get(i));
+        }
+        assertTrue(Math.abs(sd.get().toDouble() - 60D/9) < 0.0001);
+
+
+        AggregatorImpls.AggregableMean<Integer> reverse = new AggregatorImpls.AggregableMean<>();
+        for (int i = 0; i < intList.size(); i++){
+            reverse.accept(intList.get(intList.size() - i - 1));
+        }
+        sd.combine(reverse);
+        assertTrue(Math.abs(sd.get().toDouble() - 60D/9) < 0.0001);
+    }
+
+    @Test
     public void AggregableCountUniqueTest(){
         // at this low range, it's linear counting
 

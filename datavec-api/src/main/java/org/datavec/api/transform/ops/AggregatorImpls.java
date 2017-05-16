@@ -241,6 +241,13 @@ public class AggregatorImpls {
         }
     }
 
+    /**
+     * This class offers an aggregable reduce operation for the unbiased standard deviation, i.e. the estimator
+     * of the square root of the arithmetic mean of squared differences to the mean, corrected with Bessel's correction.
+     *
+     * See https://en.wikipedia.org/wiki/Unbiased_estimation_of_standard_deviation
+     * This is computed with Welford's method for increased numerical stability & aggregability.
+     */
     public static class AggregableStdDev<T extends Number> implements IAggregableReduceOp<T, Writable> {
 
         @Getter
@@ -288,18 +295,184 @@ public class AggregatorImpls {
         }
     }
 
+    /**
+     * This class offers an aggregable reduce operation for the biased standard deviation, i.e. the estimator
+     * of the square root of the arithmetic mean of squared differences to the mean.
+     *
+     * See https://en.wikipedia.org/wiki/Unbiased_estimation_of_standard_deviation
+     * This is computed with Welford's method for increased numerical stability & aggregability.
+     */
+    public static class AggregableUncorrectedStdDev<T extends Number> implements IAggregableReduceOp<T, Writable> {
+
+        @Getter
+        private Long count = 0L;
+        @Getter
+        private Double mean = 0D;
+        @Getter
+        private Double variation = 0D;
+
+
+        public void accept(T n) {
+            if (count == 0) {
+                count = 1L;
+                mean = n.doubleValue();
+                variation = 0D;
+            } else {
+                Long newCount = count + 1;
+                Double newMean = mean + (n.doubleValue() - mean) / newCount;
+                Double newvariation = variation + (n.doubleValue() - mean) * (n.doubleValue() - newMean);
+                count = newCount;
+                mean = newMean;
+                variation = newvariation;
+            }
+        }
+
+        public <U extends IAggregableReduceOp<T, Writable>> void combine(U acc) {
+            if (acc instanceof AggregableStdDev) {
+                AggregableStdDev<T> accu = (AggregableStdDev <T>)acc;
+
+                Long totalCount = count + accu.getCount();
+                Double totalMean =
+                        (accu.getMean() * accu.getCount() + mean * count) / totalCount;
+                // the variance of the union is the sum of variances
+                Double variance = variation / (count - 1);
+                Double otherVariance = accu.getVariation() / (accu.getCount() - 1);
+                Double totalVariation = (variance + otherVariance) * (totalCount - 1);
+                count = totalCount;
+                mean = totalMean;
+                variation = variation;
+            }
+        }
+
+        public Writable get() {
+            return new DoubleWritable(Math.sqrt(variation / count));
+        }
+    }
+
+
+    /**
+     * This class offers an aggregable reduce operation for the unbiased variance, i.e. the estimator
+     * of the arithmetic mean of squared differences to the mean, corrected with Bessel's correction.
+     *
+     * See https://en.wikipedia.org/wiki/Variance#Population_variance_and_sample_variance
+     * This is computed with Welford's method for increased numerical stability & aggregability.
+     */
+    public static class AggregableVariance<T extends Number> implements IAggregableReduceOp<T, Writable> {
+
+        @Getter
+        private Long count = 0L;
+        @Getter
+        private Double mean = 0D;
+        @Getter
+        private Double variation = 0D;
+
+
+        public void accept(T n) {
+            if (count == 0) {
+                count = 1L;
+                mean = n.doubleValue();
+                variation = 0D;
+            } else {
+                Long newCount = count + 1;
+                Double newMean = mean + (n.doubleValue() - mean) / newCount;
+                Double newvariation = variation + (n.doubleValue() - mean) * (n.doubleValue() - newMean);
+                count = newCount;
+                mean = newMean;
+                variation = newvariation;
+            }
+        }
+
+        public <U extends IAggregableReduceOp<T, Writable>> void combine(U acc) {
+            if (acc instanceof AggregableStdDev) {
+                AggregableStdDev<T> accu = (AggregableStdDev<T>) acc;
+
+                Long totalCount = count + accu.getCount();
+                Double totalMean =
+                        (accu.getMean() * accu.getCount() + mean * count) / totalCount;
+                // the variance of the union is the sum of variances
+                Double variance = variation / (count - 1);
+                Double otherVariance = accu.getVariation() / (accu.getCount() - 1);
+                Double totalVariation = (variance + otherVariance) * (totalCount - 1);
+                count = totalCount;
+                mean = totalMean;
+                variation = variation;
+            }
+        }
+
+        public Writable get() {
+            return new DoubleWritable(variation / (count - 1));
+        }
+    }
+
+
+    /**
+     * This class offers an aggregable reduce operation for the population variance, i.e. the uncorrected estimator
+     * of the arithmetic mean of squared differences to the mean.
+     *
+     * See https://en.wikipedia.org/wiki/Variance#Population_variance_and_sample_variance
+     * This is computed with Welford's method for increased numerical stability & aggregability.
+     */
+    public static class AggregablePopulationVariance<T extends Number> implements IAggregableReduceOp<T, Writable> {
+
+        @Getter
+        private Long count = 0L;
+        @Getter
+        private Double mean = 0D;
+        @Getter
+        private Double variation = 0D;
+
+
+        public void accept(T n) {
+            if (count == 0) {
+                count = 1L;
+                mean = n.doubleValue();
+                variation = 0D;
+            } else {
+                Long newCount = count + 1;
+                Double newMean = mean + (n.doubleValue() - mean) / newCount;
+                Double newvariation = variation + (n.doubleValue() - mean) * (n.doubleValue() - newMean);
+                count = newCount;
+                mean = newMean;
+                variation = newvariation;
+            }
+        }
+
+        public <U extends IAggregableReduceOp<T, Writable>> void combine(U acc) {
+            if (acc instanceof AggregableStdDev) {
+                AggregableStdDev<T> accu = (AggregableStdDev<T>) acc;
+
+                Long totalCount = count + accu.getCount();
+                Double totalMean =
+                        (accu.getMean() * accu.getCount() + mean * count) / totalCount;
+                // the variance of the union is the sum of variances
+                Double variance = variation / (count - 1);
+                Double otherVariance = accu.getVariation() / (accu.getCount() - 1);
+                Double totalVariation = (variance + otherVariance) * (totalCount - 1);
+                count = totalCount;
+                mean = totalMean;
+                variation = variation;
+            }
+        }
+
+        public Writable get() {
+            return new DoubleWritable(variation / count);
+        }
+    }
+
+    /**
+     *
+     * This distinct count is based on streamlib's implementation of "HyperLogLog in Practice:
+     * Algorithmic Engineering of a State of The Art Cardinality Estimation Algorithm", available
+     * <a href="http://dx.doi.org/10.1145/2452376.2452456">here</a>.
+     *
+     * The relative accuracy is approximately `1.054 / sqrt(2^p)`. Setting
+     * a nonzero `sp > p` in HyperLogLogPlus(p, sp) would trigger sparse
+     * representation of registers, which may reduce the memory consumption
+     * and increase accuracy when the cardinality is small.
+     * @param <T>
+     */
     public static class AggregableCountUnique<T> implements IAggregableReduceOp<T, Writable> {
 
-        /*
-         * This is based on streamlib's implementation of "HyperLogLog in Practice:
-         * Algorithmic Engineering of a State of The Art Cardinality Estimation Algorithm", available
-         * <a href="http://dx.doi.org/10.1145/2452376.2452456">here</a>.
-         *
-         * The relative accuracy is approximately `1.054 / sqrt(2^p)`. Setting
-         * a nonzero `sp > p` in HyperLogLogPlus(p, sp) would trigger sparse
-         * representation of registers, which may reduce the memory consumption
-         * and increase accuracy when the cardinality is small.
-         */
         private Float p = 0.05F;
         @Getter
         private HyperLogLogPlus hll = new HyperLogLogPlus((int) Math.ceil(2.0 * Math.log(1.054 / p) / Math.log(2)), 0);

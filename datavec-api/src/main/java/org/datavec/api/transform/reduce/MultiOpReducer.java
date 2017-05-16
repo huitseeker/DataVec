@@ -276,6 +276,13 @@ public class MultiOpReducer implements IAssociativeReducer {
                 case Stdev:
                     res.add(new AggregatorImpls.AggregableStdDev<Integer>());
                     break;
+                case UncorrectedStdDev:
+                    res.add(new AggregatorImpls.AggregableUncorrectedStdDev<Integer>());
+                case Variance:
+                    res.add(new AggregatorImpls.AggregableVariance<Integer>());
+                case PopulationVariance:
+                    res.add(new AggregatorImpls.AggregablePopulationVariance<Integer>());
+                    break;
                 case Count:
                     res.add(new AggregatorImpls.AggregableCount<Integer>());
                     break;
@@ -319,7 +326,13 @@ public class MultiOpReducer implements IAssociativeReducer {
                 case Sum:
                     res.add(new AggregatorImpls.AggregableSum<Long>());
                     break;
-                case Mean:
+                case UncorrectedStdDev:
+                    res.add(new AggregatorImpls.AggregableUncorrectedStdDev<Long>());
+                case Variance:
+                    res.add(new AggregatorImpls.AggregableVariance<Long>());
+                case PopulationVariance:
+                    res.add(new AggregatorImpls.AggregablePopulationVariance<Long>());
+                    break;                case Mean:
                     res.add(new AggregatorImpls.AggregableMean<Long>());
                     break;
                 case Stdev:
@@ -374,7 +387,13 @@ public class MultiOpReducer implements IAssociativeReducer {
                 case Stdev:
                     res.add(new AggregatorImpls.AggregableStdDev<Float>());
                     break;
-                case Count:
+                case UncorrectedStdDev:
+                    res.add(new AggregatorImpls.AggregableUncorrectedStdDev<Float>());
+                case Variance:
+                    res.add(new AggregatorImpls.AggregableVariance<Float>());
+                case PopulationVariance:
+                    res.add(new AggregatorImpls.AggregablePopulationVariance<Float>());
+                    break;                case Count:
                     res.add(new AggregatorImpls.AggregableCount<Float>());
                     break;
                 case CountUnique:
@@ -423,7 +442,13 @@ public class MultiOpReducer implements IAssociativeReducer {
                 case Stdev:
                     res.add(new AggregatorImpls.AggregableStdDev<Double>());
                     break;
-                case Count:
+                case UncorrectedStdDev:
+                    res.add(new AggregatorImpls.AggregableUncorrectedStdDev<Double>());
+                case Variance:
+                    res.add(new AggregatorImpls.AggregableVariance<Double>());
+                case PopulationVariance:
+                    res.add(new AggregatorImpls.AggregablePopulationVariance<Double>());
+                    break;                case Count:
                     res.add(new AggregatorImpls.AggregableCount<Double>());
                     break;
                 case CountUnique:

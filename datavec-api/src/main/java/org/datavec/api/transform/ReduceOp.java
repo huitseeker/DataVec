@@ -41,7 +41,8 @@ import org.datavec.api.transform.reduce.Reducer;
  */
 public enum ReduceOp {
     Prod, Min, Max, Range, //Max - Min
-    Sum, Mean, Stdev, Count, CountUnique, TakeFirst, //First value
+    Sum, Mean, Stdev, UncorrectedStdDev, Variance, PopulationVariance,
+    Count, CountUnique, TakeFirst, //First value
     TakeLast //Last value
 
 }

@@ -220,36 +220,37 @@ public class MultiOpReducer implements IAssociativeReducer {
                 lop = Collections.singletonList(defaultOp);
 
             //Execute the reduction, store the result
-            ops.add(reduceColumn(lop, type));
+            ops.add(reduceColumn(lop, type, ignoreInvalidInColumns.contains(colName), schema.getMetaData(i)));
 
         }
 
         return new DispatchOp<>(ops);
     }
 
-    public static IAggregableReduceOp<Writable, List<Writable>> reduceColumn(List<ReduceOp> op, ColumnType type) {
+    public static IAggregableReduceOp<Writable, List<Writable>> reduceColumn(List<ReduceOp> op, ColumnType type,
+                                                                             boolean ignoreInvalid, ColumnMetaData metaData) {
         switch (type) {
             case Integer:
-                return reduceIntColumn(op);
+                return reduceIntColumn(op, ignoreInvalid, metaData);
             case Long:
-                return reduceLongColumn(op);
+                return reduceLongColumn(op, ignoreInvalid, metaData);
             case Float:
-                return reduceFloatColumn(op);
+                return reduceFloatColumn(op, ignoreInvalid, metaData);
             case Double:
-                return reduceDoubleColumn(op);
+                return reduceDoubleColumn(op, ignoreInvalid, metaData);
             case String:
             case Categorical:
-                return reduceStringOrCategoricalColumn(op);
+                return reduceStringOrCategoricalColumn(op, ignoreInvalid, metaData);
             case Time:
-                return reduceTimeColumn(op);
+                return reduceTimeColumn(op, ignoreInvalid, metaData);
             case Bytes:
-                return reduceBytesColumn(op);
+                return reduceBytesColumn(op, ignoreInvalid, metaData);
             default:
                 throw new UnsupportedOperationException("Unknown or not implemented column type: " + type);
         }
     }
 
-    public static IAggregableReduceOp<Writable, List<Writable>> reduceIntColumn(List<ReduceOp> lop) {
+    public static IAggregableReduceOp<Writable, List<Writable>> reduceIntColumn(List<ReduceOp> lop, boolean ignoreInvalid, ColumnMetaData metaData) {
 
         List<IAggregableReduceOp<Integer, Writable>> res = new ArrayList<>(lop.size());
         for (int i = 0; i < lop.size(); i++){
@@ -291,10 +292,14 @@ public class MultiOpReducer implements IAssociativeReducer {
                     throw new UnsupportedOperationException("Unknown or not implemented op: " + lop.get(i));
             }
         }
-        return new IntWritableOp<>(new AggregableMultiOp<>(res));
+        IAggregableReduceOp<Writable, List<Writable>> thisOp = new IntWritableOp<>(new AggregableMultiOp<>(res));
+        if (ignoreInvalid)
+            return new AggregableCheckingOp<>(thisOp, metaData);
+        else
+            return thisOp;
     }
 
-    public static IAggregableReduceOp<Writable, List<Writable>> reduceLongColumn(List<ReduceOp> lop) {
+    public static IAggregableReduceOp<Writable, List<Writable>> reduceLongColumn(List<ReduceOp> lop, boolean ignoreInvalid, ColumnMetaData metaData) {
 
         List<IAggregableReduceOp<Long, Writable>> res = new ArrayList<>(lop.size());
         for (int i = 0; i < lop.size(); i++){
@@ -336,10 +341,14 @@ public class MultiOpReducer implements IAssociativeReducer {
                     throw new UnsupportedOperationException("Unknown or not implemented op: " + lop.get(i));
             }
         }
-        return new LongWritableOp<>(new AggregableMultiOp<>(res));
+        IAggregableReduceOp<Writable, List<Writable>> thisOp = new LongWritableOp<>(new AggregableMultiOp<>(res));
+        if (ignoreInvalid)
+            return new AggregableCheckingOp<>(thisOp, metaData);
+        else
+            return thisOp;
     }
 
-    public static IAggregableReduceOp<Writable, List<Writable>> reduceFloatColumn(List<ReduceOp> lop) {
+    public static IAggregableReduceOp<Writable, List<Writable>> reduceFloatColumn(List<ReduceOp> lop, boolean ignoreInvalid, ColumnMetaData metaData) {
 
         List<IAggregableReduceOp<Float, Writable>> res = new ArrayList<>(lop.size());
         for (int i = 0; i < lop.size(); i++){
@@ -381,10 +390,14 @@ public class MultiOpReducer implements IAssociativeReducer {
                     throw new UnsupportedOperationException("Unknown or not implemented op: " + lop.get(i));
             }
         }
-        return new FloatWritableOp<>(new AggregableMultiOp<>(res));
+        IAggregableReduceOp<Writable, List<Writable>> thisOp = new FloatWritableOp<>(new AggregableMultiOp<>(res));
+        if (ignoreInvalid)
+            return new AggregableCheckingOp<>(thisOp, metaData);
+        else
+            return thisOp;
     }
 
-    public static IAggregableReduceOp<Writable, List<Writable>> reduceDoubleColumn(List<ReduceOp> lop) {
+    public static IAggregableReduceOp<Writable, List<Writable>> reduceDoubleColumn(List<ReduceOp> lop, boolean ignoreInvalid, ColumnMetaData metaData) {
 
         List<IAggregableReduceOp<Double, Writable>> res = new ArrayList<>(lop.size());
         for (int i = 0; i < lop.size(); i++){
@@ -426,10 +439,14 @@ public class MultiOpReducer implements IAssociativeReducer {
                     throw new UnsupportedOperationException("Unknown or not implemented op: " + lop.get(i));
             }
         }
-        return new DoubleWritableOp<>(new AggregableMultiOp<>(res));
+        IAggregableReduceOp<Writable, List<Writable>> thisOp = new DoubleWritableOp<>(new AggregableMultiOp<>(res));
+        if (ignoreInvalid)
+            return new AggregableCheckingOp<>(thisOp, metaData);
+        else
+            return thisOp;
     }
 
-    public static IAggregableReduceOp<Writable, List<Writable>> reduceStringOrCategoricalColumn(List<ReduceOp> lop) {
+    public static IAggregableReduceOp<Writable, List<Writable>> reduceStringOrCategoricalColumn(List<ReduceOp> lop, boolean ignoreInvalid, ColumnMetaData metaData) {
 
         List<IAggregableReduceOp<String, Writable>> res = new ArrayList<>(lop.size());
         for (int i = 0; i < lop.size(); i++){
@@ -452,10 +469,14 @@ public class MultiOpReducer implements IAssociativeReducer {
             }
         }
 
-        return new StringWritableOp<>(new AggregableMultiOp<>(res));
+        IAggregableReduceOp<Writable, List<Writable>> thisOp = new StringWritableOp<>(new AggregableMultiOp<>(res));
+        if (ignoreInvalid)
+            return new AggregableCheckingOp<>(thisOp, metaData);
+        else
+            return thisOp;
     }
 
-    public static IAggregableReduceOp<Writable, List<Writable>> reduceTimeColumn(List<ReduceOp> lop) {
+    public static IAggregableReduceOp<Writable, List<Writable>> reduceTimeColumn(List<ReduceOp> lop, boolean ignoreInvalid, ColumnMetaData metaData) {
 
         List<IAggregableReduceOp<Long, Writable>> res = new ArrayList<>(lop.size());
         for (int i = 0; i < lop.size(); i++){
@@ -491,10 +512,14 @@ public class MultiOpReducer implements IAssociativeReducer {
                     throw new UnsupportedOperationException("Reduction op \"" + lop.get(i) + "\" not supported on time columns");
             }
         }
-        return new LongWritableOp<>(new AggregableMultiOp<>(res));
+        IAggregableReduceOp<Writable, List<Writable>> thisOp = new LongWritableOp<>(new AggregableMultiOp<>(res));
+        if (ignoreInvalid)
+            return new AggregableCheckingOp<>(thisOp, metaData);
+        else
+            return thisOp;
     }
 
-    public static IAggregableReduceOp<Writable, List<Writable>> reduceBytesColumn(List<ReduceOp> lop) {
+    public static IAggregableReduceOp<Writable, List<Writable>> reduceBytesColumn(List<ReduceOp> lop, boolean ignoreInvalid, ColumnMetaData metaData) {
 
         List<IAggregableReduceOp<Byte, Writable>> res = new ArrayList<>(lop.size());
         for (int i = 0; i < lop.size(); i++){
@@ -510,7 +535,11 @@ public class MultiOpReducer implements IAssociativeReducer {
                             + "(can only perform TakeFirst and TakeLast ops on bytes columns)");
             }
         }
-        return new ByteWritableOp<>(new AggregableMultiOp<>(res));
+        IAggregableReduceOp<Writable, List<Writable>> thisOp = new ByteWritableOp<>(new AggregableMultiOp<>(res));
+        if (ignoreInvalid)
+            return new AggregableCheckingOp<>(thisOp, metaData);
+        else
+            return thisOp;
     }
 
     @Override

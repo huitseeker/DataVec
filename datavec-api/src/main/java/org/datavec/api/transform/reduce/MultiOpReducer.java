@@ -254,6 +254,8 @@ public class MultiOpReducer implements IAssociativeReducer {
         List<IAggregableReduceOp<Integer, Writable>> res = new ArrayList<>(lop.size());
         for (int i = 0; i < lop.size(); i++){
             switch (lop.get(i)) {
+                case Prod:
+                    res.add(new AggregatorImpls.AggregableProd<Integer>());;
                 case Min:
                     res.add(new AggregatorImpls.AggregableMin<Integer>());
                 case Max:
@@ -286,6 +288,8 @@ public class MultiOpReducer implements IAssociativeReducer {
         List<IAggregableReduceOp<Long, Writable>> res = new ArrayList<>(lop.size());
         for (int i = 0; i < lop.size(); i++){
             switch (lop.get(i)) {
+                case Prod:
+                    res.add(new AggregatorImpls.AggregableProd<Long>());;
                 case Min:
                     res.add(new AggregatorImpls.AggregableMin<Long>());
                 case Max:
@@ -318,6 +322,8 @@ public class MultiOpReducer implements IAssociativeReducer {
         List<IAggregableReduceOp<Float, Writable>> res = new ArrayList<>(lop.size());
         for (int i = 0; i < lop.size(); i++){
             switch (lop.get(i)) {
+                case Prod:
+                    res.add(new AggregatorImpls.AggregableProd<Float>());;
                 case Min:
                     res.add(new AggregatorImpls.AggregableMin<Float>());
                 case Max:
@@ -350,6 +356,8 @@ public class MultiOpReducer implements IAssociativeReducer {
         List<IAggregableReduceOp<Double, Writable>> res = new ArrayList<>(lop.size());
         for (int i = 0; i < lop.size(); i++){
             switch (lop.get(i)) {
+                case Prod:
+                    res.add(new AggregatorImpls.AggregableProd<Double>());;
                 case Min:
                     res.add(new AggregatorImpls.AggregableMin<Double>());
                 case Max:
@@ -408,7 +416,11 @@ public class MultiOpReducer implements IAssociativeReducer {
                     res.add(new AggregatorImpls.AggregableMin<Long>());
                 case Max:
                     res.add(new AggregatorImpls.AggregableMax<Long>());
+                case Range:
+                    res.add(new AggregatorImpls.AggregableRange<Long>());
                 case Mean:
+                    res.add(new AggregatorImpls.AggregableMean<Long>());
+                case Stdev:
                     res.add(new AggregatorImpls.AggregableMean<Long>());
                 case Count:
                     res.add(new AggregatorImpls.AggregableCount<Long>());

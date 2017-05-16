@@ -24,6 +24,7 @@ import org.nd4j.shade.jackson.annotation.JsonInclude;
 import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
+import java.io.Serializable;
 import java.util.List;
 
 /**
@@ -34,7 +35,7 @@ import java.util.List;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
 @JsonSubTypes(value = {@JsonSubTypes.Type(value = MultiOpReducer.class, name = "MultiOpReducer")})
-public interface IAssociativeReducer<T> {
+public interface IAssociativeReducer extends Serializable {
 
     /**
      *

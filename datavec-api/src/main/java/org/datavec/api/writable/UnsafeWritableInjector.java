@@ -1,11 +1,16 @@
 package org.datavec.api.writable;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
  * Created by huitseeker on 5/13/17.
  */
 public class UnsafeWritableInjector {
     public static <T> Writable inject (T x){
-        if (x instanceof Integer) {
+        if (x instanceof INDArray) {
+            throw new IllegalArgumentException("Wrong argument of type INDArray (" +
+                    x.getClass().getName() + ") please use org.datavec.common.data.NDArrayWritable manually to convert.");
+        }
+        else if (x instanceof Integer) {
             return new IntWritable((Integer) x);
         } else if (x instanceof Long) {
             return new LongWritable((Long) x);

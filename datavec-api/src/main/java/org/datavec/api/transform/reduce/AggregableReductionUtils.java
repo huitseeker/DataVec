@@ -86,8 +86,10 @@ public class AggregableReductionUtils {
                     break;
                 case UncorrectedStdDev:
                     res.add(new AggregatorImpls.AggregableUncorrectedStdDev<Integer>());
+                    break;
                 case Variance:
                     res.add(new AggregatorImpls.AggregableVariance<Integer>());
+                    break;
                 case PopulationVariance:
                     res.add(new AggregatorImpls.AggregablePopulationVariance<Integer>());
                     break;
@@ -134,17 +136,19 @@ public class AggregableReductionUtils {
                 case Sum:
                     res.add(new AggregatorImpls.AggregableSum<Long>());
                     break;
+                case Stdev:
+                    res.add(new AggregatorImpls.AggregableStdDev<Long>());
+                    break;
                 case UncorrectedStdDev:
                     res.add(new AggregatorImpls.AggregableUncorrectedStdDev<Long>());
+                    break;
                 case Variance:
                     res.add(new AggregatorImpls.AggregableVariance<Long>());
                 case PopulationVariance:
                     res.add(new AggregatorImpls.AggregablePopulationVariance<Long>());
-                    break;                case Mean:
-                    res.add(new AggregatorImpls.AggregableMean<Long>());
                     break;
-                case Stdev:
-                    res.add(new AggregatorImpls.AggregableStdDev<Long>());
+                case Mean:
+                    res.add(new AggregatorImpls.AggregableMean<Long>());
                     break;
                 case Count:
                     res.add(new AggregatorImpls.AggregableCount<Long>());
@@ -197,11 +201,14 @@ public class AggregableReductionUtils {
                     break;
                 case UncorrectedStdDev:
                     res.add(new AggregatorImpls.AggregableUncorrectedStdDev<Float>());
+                    break;
                 case Variance:
                     res.add(new AggregatorImpls.AggregableVariance<Float>());
+                    break;
                 case PopulationVariance:
                     res.add(new AggregatorImpls.AggregablePopulationVariance<Float>());
-                    break;                case Count:
+                    break;
+                case Count:
                     res.add(new AggregatorImpls.AggregableCount<Float>());
                     break;
                 case CountUnique:
@@ -252,11 +259,14 @@ public class AggregableReductionUtils {
                     break;
                 case UncorrectedStdDev:
                     res.add(new AggregatorImpls.AggregableUncorrectedStdDev<Double>());
+                    break;
                 case Variance:
                     res.add(new AggregatorImpls.AggregableVariance<Double>());
+                    break;
                 case PopulationVariance:
                     res.add(new AggregatorImpls.AggregablePopulationVariance<Double>());
-                    break;                case Count:
+                    break;
+                case Count:
                     res.add(new AggregatorImpls.AggregableCount<Double>());
                     break;
                 case CountUnique:
@@ -327,7 +337,7 @@ public class AggregableReductionUtils {
                     res.add(new AggregatorImpls.AggregableMean<Long>());
                     break;
                 case Stdev:
-                    res.add(new AggregatorImpls.AggregableMean<Long>());
+                    res.add(new AggregatorImpls.AggregableStdDev<Long>());
                     break;
                 case Count:
                     res.add(new AggregatorImpls.AggregableCount<Long>());

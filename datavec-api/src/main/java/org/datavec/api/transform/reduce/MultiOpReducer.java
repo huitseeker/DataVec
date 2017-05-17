@@ -16,14 +16,12 @@
 
 package org.datavec.api.transform.reduce;
 
-import com.clearspring.analytics.stream.cardinality.HyperLogLogPlus;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.commons.lang3.tuple.Triple;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.ReduceOp;
+import org.datavec.api.transform.condition.column.TrivialColumnCondition;
 import org.datavec.api.transform.condition.Condition;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.metadata.DoubleMetaData;
@@ -80,6 +78,7 @@ public class MultiOpReducer implements IAssociativeReducer {
         this.defaultOp = defaultOp;
         this.opMap = opMap;
         this.customReductions = customReductions;
+        this.conditionalReductions = conditionalReductions;
         this.ignoreInvalidInColumns = ignoreInvalidInColumns;
     }
 
@@ -122,15 +121,13 @@ public class MultiOpReducer implements IAssociativeReducer {
                 continue;
             }
 
-            //First: check for a custom reductions on this column
+            //First: check for a custom reduction on this column
             if (customReductions != null && customReductions.containsKey(name)) {
                 AggregableColumnReduction reduction = customReductions.get(name);
 
                 List<String> outName = reduction.getColumnsOutputName(name);
                 List<ColumnMetaData> outMeta = reduction.getColumnOutputMetaData(outName, inMeta);
-
                 newMeta.addAll(outMeta);
-
                 continue;
             }
 
@@ -139,10 +136,11 @@ public class MultiOpReducer implements IAssociativeReducer {
                 ConditionalReduction reduction = conditionalReductions.get(name);
 
                 String outName = reduction.getOutputName();
-                ColumnMetaData m = getMetaForColumn(reduction.getReduction(), name, inMeta);
-                m.setName(outName);
-                newMeta.add(m);
-
+                for (ReduceOp red: reduction.getReductions()){
+                    ColumnMetaData m = getMetaForColumn(red, name, inMeta);
+                    m.setName(outName);
+                    newMeta.add(m);
+                }
                 continue;
             }
 
@@ -150,10 +148,9 @@ public class MultiOpReducer implements IAssociativeReducer {
             //Otherwise: get the specified (built-in) reduction op
             //If no reduction op is specified for that column: use the default
             List<ReduceOp> lop = opMap.get(name);
-            if (lop != null & !lop.isEmpty())
-                for (i = 0; i < lop.size(); i++){
-                    newMeta.add(getMetaForColumn(lop.get(i), name, inMeta));
-                }
+            for (ReduceOp op : lop){
+                newMeta.add(getMetaForColumn(op, name, inMeta));
+            }
         }
 
         return schema.newSchema(newMeta);
@@ -181,9 +178,7 @@ public class MultiOpReducer implements IAssociativeReducer {
                 String outName = "sum(" + name + ")";
                 //Issue with sum: the input meta data restrictions probably won't hold. But the data _type_ should essentially remain the same
                 ColumnMetaData outMeta;
-                if (inMeta instanceof IntegerMetaData || inMeta instanceof LongMetaData) {
-                    outMeta = new LongMetaData(outName);
-                } else if (inMeta instanceof DoubleMetaData) {
+                if (inMeta instanceof IntegerMetaData || inMeta instanceof LongMetaData || inMeta instanceof DoubleMetaData) {
                     outMeta = new DoubleMetaData(outName);
                 } else {
                     //Sum doesn't really make sense to sum other column types anyway...
@@ -196,10 +191,10 @@ public class MultiOpReducer implements IAssociativeReducer {
             case Stdev:
                 return new DoubleMetaData("stdev(" + name + ")");
             case Count:
-                return new IntegerMetaData("count", 0, null);
+                return new LongMetaData("count", 0L, null);
             case CountUnique:
-                //Always integer
-                return new IntegerMetaData("countUnique(" + name + ")", 0, null);
+                //Always long
+                return new LongMetaData("countUnique(" + name + ")", 0L, null);
             default:
                 throw new UnsupportedOperationException("Unknown or not implemented op: " + op);
         }
@@ -216,12 +211,15 @@ public class MultiOpReducer implements IAssociativeReducer {
         List<String> colNames = schema.getColumnNames();
 
         List<IAggregableReduceOp<Writable, List<Writable>>> ops = new ArrayList<>(nCols);
+        boolean conditionalActive = (conditionalReductions != null && !conditionalReductions.isEmpty());
+        List<Condition> conditions = new ArrayList<>(nCols);
 
         for (int i = 0; i < nCols; i++) {
             String colName = colNames.get(i);
             if (keyColumnsSet != null && keyColumnsSet.contains(colName)) {
                 IAggregableReduceOp<Writable, Writable> first = new AggregatorImpls.AggregableFirst<>();
                 ops.add(new AggregableMultiOp<>(Collections.singletonList(first)));
+                if (conditionalActive) conditions.add(new TrivialColumnCondition(colName));
                 continue;
             }
 
@@ -232,21 +230,33 @@ public class MultiOpReducer implements IAssociativeReducer {
                 ops.add(reduction.reduceOp());
             }
 
+            // are we adding global *conditional* reduction column?
+            // Only practical difference with conditional reductions is we filter the input on an all-fields condition first
+            if (conditionalActive) {
+                if (conditionalReductions.containsKey(colName))
+                    conditions.add(conditionalReductions.get(colName).getCondition());
+                else
+                    conditions.add(new TrivialColumnCondition(colName));
+            }
 
             //What type of column is this?
             ColumnType type = schema.getType(i);
 
             //What ops are we performing on this column?
-            List<ReduceOp> lop = opMap.get(colName);
+            boolean conditionalOp = conditionalActive && conditionalReductions.containsKey(colName);
+            List<ReduceOp> lop = (conditionalOp ? conditionalReductions.get(colName).getReductions() : opMap.get(colName));
             if (lop == null || lop.isEmpty())
                 lop = Collections.singletonList(defaultOp);
 
             //Execute the reduction, store the result
             ops.add(AggregableReductionUtils.reduceColumn(lop, type, ignoreInvalidInColumns.contains(colName), schema.getMetaData(i)));
-
         }
 
-        return new DispatchOp<>(ops);
+        if (conditionalActive) {
+            return new DispatchWithConditionOp<>(ops, conditions);
+        } else {
+            return new DispatchOp<>(ops);
+        }
     }
 
     @Override
@@ -397,17 +407,32 @@ public class MultiOpReducer implements IAssociativeReducer {
 
 
         /**
-         * Conditional reduction: apply the reduce on a specified column, where the reduction occurs *only* on those
+         * Conditional reduction: apply the reduces on a specified column, where the reduction occurs *only* on those
          * examples where the condition returns true. Examples where the condition does not apply (returns false) are
          * ignored/excluded.
          *
          * @param column     Name of the column to execute the conditional reduction on
          * @param outputName Name of the column, after the reduction has been executed
-         * @param reduction  Reduction to execute
+         * @param reductions  Reductions to execute
+         * @param condition  Condition to use in the reductions
+         */
+        public Builder conditionalReduction(String column, String outputName, List<ReduceOp> reductions, Condition condition) {
+            this.conditionalReductions.put(column, new ConditionalReduction(column, outputName, reductions, condition));
+            return this;
+        }
+
+        /**
+         * Conditional reduction: apply the reduces on a specified column, where the reduction occurs *only* on those
+         * examples where the condition returns true. Examples where the condition does not apply (returns false) are
+         * ignored/excluded.
+         *
+         * @param column     Name of the column to execute the conditional reduction on
+         * @param outputName Name of the column, after the reduction has been executed
+         * @param reductions  Reductions to execute
          * @param condition  Condition to use in the reductions
          */
         public Builder conditionalReduction(String column, String outputName, ReduceOp reduction, Condition condition) {
-            this.conditionalReductions.put(column, new ConditionalReduction(column, outputName, reduction, condition));
+            this.conditionalReductions.put(column, new ConditionalReduction(column, outputName, Collections.singletonList(reduction), condition));
             return this;
         }
 
@@ -435,7 +460,7 @@ public class MultiOpReducer implements IAssociativeReducer {
     public static class ConditionalReduction implements Serializable {
         private final String columnName;
         private final String outputName;
-        private final ReduceOp reduction;
+        private final List<ReduceOp> reductions;
         private final Condition condition;
     }
 

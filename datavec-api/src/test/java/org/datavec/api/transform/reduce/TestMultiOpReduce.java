@@ -21,6 +21,7 @@ import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.ReduceOp;
 import org.datavec.api.transform.condition.Condition;
 import org.datavec.api.transform.condition.ConditionOp;
+import org.datavec.api.transform.condition.column.ColumnCondition;
 import org.datavec.api.transform.condition.column.StringColumnCondition;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.metadata.StringMetaData;
@@ -379,7 +380,7 @@ public class TestMultiOpReduce {
 
 
 
-    @Ignore
+    @Test
     public void testConditionalReduction() {
 
         Schema schema = new Schema.Builder().addColumnString("key").addColumnInteger("intCol")
@@ -396,7 +397,7 @@ public class TestMultiOpReduce {
         Condition condition = new StringColumnCondition("filterCol", ConditionOp.Equal, "a");
 
         MultiOpReducer reducer = new MultiOpReducer.Builder(ReduceOp.Stdev).keyColumns("key")
-                        // .conditionalReduction("intCol", "sumOfAs", ReduceOp.Sum, condition) //Sum, only where 'filterCol' == "a"
+                        .conditionalReduction("intCol", "sumOfAs", ReduceOp.Sum, condition) //Sum, only where 'filterCol' == "a"
                         .countUniqueColumns("filterCol", "textCol").build();
 
         reducer.setInputSchema(schema);
@@ -407,8 +408,8 @@ public class TestMultiOpReduce {
             accumulator.accept(inputs.get(i));
         }
         List<Writable> out = accumulator.get();
-        List<Writable> expected = Arrays.<Writable>asList(new Text("someKey"), new LongWritable(1 + 3 + 5),
-                        new IntWritable(2), new IntWritable(4));
+        List<Writable> expected = Arrays.<Writable>asList(new Text("someKey"), new DoubleWritable(1+ 3 + 5),
+                        new LongWritable(2), new LongWritable(4));
 
         assertEquals(4, out.size());
         assertEquals(expected, out);
@@ -417,7 +418,7 @@ public class TestMultiOpReduce {
         assertEquals(4, outSchema.numColumns());
         assertEquals(Arrays.asList("key", "sumOfAs", "countUnique(filterCol)", "countUnique(textCol)"),
                         outSchema.getColumnNames());
-        assertEquals(Arrays.asList(ColumnType.String, ColumnType.Long, ColumnType.Integer, ColumnType.Integer),
+        assertEquals(Arrays.asList(ColumnType.String, ColumnType.Double, ColumnType.Long, ColumnType.Long),
                         outSchema.getColumnTypes());
     }
 }

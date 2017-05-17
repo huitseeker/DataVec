@@ -40,7 +40,6 @@ import org.datavec.api.transform.join.Join;
 import org.datavec.api.transform.rank.CalculateSortedRank;
 import org.datavec.api.transform.sequence.ConvertToSequence;
 import org.datavec.api.transform.filter.Filter;
-import org.datavec.api.transform.reduce.IReducer;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.schema.SequenceSchema;
 import org.datavec.api.transform.sequence.SequenceSplit;

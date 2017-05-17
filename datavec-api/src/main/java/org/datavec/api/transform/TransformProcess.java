@@ -74,7 +74,7 @@ import org.datavec.api.transform.analysis.columns.NumericalColumnAnalysis;
 import org.datavec.api.transform.transform.categorical.CategoricalToOneHotTransform;
 import lombok.Data;
 import org.datavec.api.transform.analysis.DataAnalysis;
-import org.datavec.api.transform.reduce.IReducer;
+import org.datavec.api.transform.reduce.IAssociativeReducer;
 import org.datavec.api.transform.schema.SequenceSchema;
 import org.datavec.api.transform.transform.integer.IntegerMathOpTransform;
 import org.datavec.api.writable.comparator.WritableComparator;
@@ -386,7 +386,7 @@ public class TransformProcess implements Serializable {
         //Register concrete subtypes for JSON serialization
 
         List<Class<?>> classes =
-                        Arrays.<Class<?>>asList(Transform.class, Condition.class, Filter.class, IReducer.class);
+                        Arrays.<Class<?>>asList(Transform.class, Condition.class, Filter.class, IAssociativeReducer.class);
         List<String> classNames = new ArrayList<>(6);
         for (Class<?> c : classes)
             classNames.add(c.getName());
@@ -395,7 +395,7 @@ public class TransformProcess implements Serializable {
 
         if (subtypesClassCache == null) {
             List<Class<?>> interfaces =
-                            Arrays.<Class<?>>asList(Transform.class, Condition.class, Filter.class, IReducer.class);
+                            Arrays.<Class<?>>asList(Transform.class, Condition.class, Filter.class, IAssociativeReducer.class);
             List<Class<?>> classesList = Arrays.<Class<?>>asList();
 
             Collection<URL> urls = ClasspathHelper.forClassLoader();
@@ -1022,7 +1022,7 @@ public class TransformProcess implements Serializable {
          *
          * @param reducer        Reducer to use to reduce each window
          */
-        public Builder reduceSequence(IReducer reducer) {
+        public Builder reduceSequence(IAssociativeReducer reducer) {
             actionList.add(new DataAction(new ReduceSequenceTransform(reducer)));
             convertFromSequence();
             return this;
@@ -1036,7 +1036,7 @@ public class TransformProcess implements Serializable {
          * @param reducer        Reducer to use to reduce each window
          * @param windowFunction Window function to find apply on each sequence individually
          */
-        public Builder reduceSequenceByWindow(IReducer reducer, WindowFunction windowFunction) {
+        public Builder reduceSequenceByWindow(IAssociativeReducer reducer, WindowFunction windowFunction) {
             actionList.add(new DataAction(new ReduceSequenceByWindowTransform(reducer, windowFunction)));
             return this;
         }

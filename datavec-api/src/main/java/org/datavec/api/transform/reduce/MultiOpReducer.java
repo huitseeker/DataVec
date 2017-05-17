@@ -147,10 +147,11 @@ public class MultiOpReducer implements IAssociativeReducer {
 
             //Otherwise: get the specified (built-in) reduction op
             //If no reduction op is specified for that column: use the default
-            List<ReduceOp> lop = opMap.get(name);
-            for (ReduceOp op : lop){
-                newMeta.add(getMetaForColumn(op, name, inMeta));
-            }
+            List<ReduceOp> lop = opMap.containsKey(name) ? opMap.get(name) : Collections.singletonList(defaultOp);
+            if (lop != null)
+                for (ReduceOp op : lop) {
+                    newMeta.add(getMetaForColumn(op, name, inMeta));
+                }
         }
 
         return schema.newSchema(newMeta);
@@ -228,6 +229,7 @@ public class MultiOpReducer implements IAssociativeReducer {
             if (customReductions != null && customReductions.containsKey(colName)) {
                 AggregableColumnReduction reduction = customReductions.get(colName);
                 ops.add(reduction.reduceOp());
+                continue;
             }
 
             // are we adding global *conditional* reduction column?

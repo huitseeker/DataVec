@@ -183,11 +183,12 @@ public class TestMultiOpReduce {
 
             Schema schema = new Schema.Builder().addColumnString("key").addColumnInteger("column").build();
 
-            Reducer reducer = new Reducer.Builder(op).keyColumns("key").build();
+            MultiOpReducer reducer = new MultiOpReducer.Builder(op).keyColumns("key").build();
             reducer.setInputSchema(schema);
+            IAggregableReduceOp<List<Writable>, List<Writable>> accu = reducer.aggregableReducer();
 
             try {
-                reducer.reduce(inputs);
+                for (List<Writable> i: inputs) accu.accept(i);
                 fail("No exception thrown for invalid input: op=" + op);
             } catch (NumberFormatException e) {
                 //ok

@@ -25,7 +25,7 @@ import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.sequence.ConvertFromSequence;
 import org.datavec.api.transform.sequence.ConvertToSequence;
 import org.datavec.api.transform.sequence.SequenceSplit;
-import org.datavec.api.transform.reduce.IReducer;
+import org.datavec.api.transform.reduce.IAssociativeReducer;
 
 import java.io.Serializable;
 

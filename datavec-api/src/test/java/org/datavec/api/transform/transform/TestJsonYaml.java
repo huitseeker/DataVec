@@ -28,7 +28,6 @@ import org.datavec.api.transform.condition.sequence.SequenceLengthCondition;
 import org.datavec.api.transform.filter.ConditionFilter;
 import org.datavec.api.transform.filter.FilterInvalidValues;
 import org.datavec.api.transform.reduce.MultiOpReducer;
-import org.datavec.api.transform.reduce.Reducer;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.sequence.comparator.NumericalColumnComparator;
 import org.datavec.api.transform.sequence.comparator.StringComparator;
@@ -123,7 +122,7 @@ public class TestJsonYaml {
                                         .reduce(new MultiOpReducer.Builder(ReduceOp.TakeFirst).keyColumns("TimeCol2")
                                                         .countColumns("Cat").sumColumns("Dbl").build())
                                         .reduceSequenceByWindow(
-                                                        new Reducer.Builder(ReduceOp.TakeFirst).countColumns("Cat2")
+                                                        new MultiOpReducer.Builder(ReduceOp.TakeFirst).countColumns("Cat2")
                                                                         .stdevColumns("Dbl2").build(),
                                                         new OverlappingTimeWindowFunction.Builder()
                                                                         .timeColumn("TimeCol2")

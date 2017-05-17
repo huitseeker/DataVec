@@ -1,5 +1,6 @@
 package org.datavec.local.transforms;
 
+import com.sun.org.apache.xpath.internal.operations.Mult;
 import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
 import it.unimi.dsi.fastutil.floats.FloatArrayList;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
@@ -10,7 +11,7 @@ import org.datavec.api.transform.condition.column.*;
 import org.datavec.api.transform.filter.ConditionFilter;
 import org.datavec.api.transform.filter.Filter;
 import org.datavec.api.transform.rank.CalculateSortedRank;
-import org.datavec.api.transform.reduce.Reducer;
+import org.datavec.api.transform.reduce.MultiOpReducer;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.Writable;
@@ -84,7 +85,7 @@ public class TableRecords {
                                 "Tables don't have a time series sequence, please use the List<Writable> version of this function for input");
 
             } else if (dataAction.getReducer() != null) {
-                ret = reduce(ret, (Reducer) dataAction.getReducer());
+                ret = reduce(ret, (MultiOpReducer) dataAction.getReducer());
             } else if (dataAction.getSequenceSplit() != null) {
                 throw new UnsupportedOperationException(
                                 "Tables don't have a time series sequence, please use the List<Writable> version of this function for input");
@@ -132,20 +133,20 @@ public class TableRecords {
      * @param reducer the reducer to run
      * @return
      */
-    public static Table reduce(Table reduce, Reducer reducer) {
+    public static Table reduce(Table reduce, MultiOpReducer reducer) {
 
         if (reducer.getConditionalReductions() != null) {
-            for (Map.Entry<String, Reducer.ConditionalReduction> pair : reducer.getConditionalReductions().entrySet()) {
+            for (Map.Entry<String, MultiOpReducer.ConditionalReduction> pair : reducer.getConditionalReductions().entrySet()) {
                 Condition conditionToFilter = pair.getValue().getCondition();
                 String inputColumnName = pair.getKey();
                 Schema output = reducer.transform(reducer.getInputSchema());
                 org.datavec.dataframe.filtering.Filter filter =
                                 mapFilterFromCondition(conditionToFilter, inputColumnName, output);
-                reduce = runReduce(reduce.selectWhere(filter), pair.getValue().getReduction(), inputColumnName);
+                reduce = runReduce(reduce.selectWhere(filter), pair.getValue().getReductions().get(0), inputColumnName);
             }
         } else {
-            for (Map.Entry<String, ReduceOp> pair : reducer.getOpMap().entrySet()) {
-                reduce = runReduce(reduce, pair.getValue(), pair.getKey());
+            for (Map.Entry<String, List<ReduceOp>> pair : reducer.getOpMap().entrySet()) {
+                reduce = runReduce(reduce, pair.getValue().get(0), pair.getKey());
             }
         }
 

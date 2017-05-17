@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.reduce;
 
+import org.datavec.api.transform.ops.IAggregableReduceOp;
 import org.datavec.api.writable.*;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.schema.Schema;
@@ -45,12 +46,14 @@ public class TestGeoReduction {
 
         Schema schema = new Schema.Builder().addColumnString("key").addColumnString("coord").build();
 
-        Reducer reducer = new Reducer.Builder(ReduceOp.Count).keyColumns("key")
+        MultiOpReducer reducer = new MultiOpReducer.Builder(ReduceOp.Count).keyColumns("key")
                         .customReduction("coord", new CoordinatesReduction("coordSum", ReduceOp.Sum, "#")).build();
 
         reducer.setInputSchema(schema);
 
-        List<Writable> out = reducer.reduce(inputs);
+        IAggregableReduceOp<List<Writable>, List<Writable>> aggregableReduceOp = reducer.aggregableReducer();
+        for (List<Writable> l: inputs) aggregableReduceOp.accept(l);
+        List<Writable> out = aggregableReduceOp.get();
 
         assertEquals(2, out.size());
         assertEquals(expected, out);

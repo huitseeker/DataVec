@@ -20,7 +20,6 @@ import lombok.AllArgsConstructor;
 import org.apache.spark.api.java.function.PairFunction;
 import org.datavec.api.transform.reduce.IAssociativeReducer;
 import org.datavec.api.writable.Writable;
-import org.datavec.api.transform.reduce.IReducer;
 import org.datavec.api.transform.schema.Schema;
 import scala.Tuple2;
 

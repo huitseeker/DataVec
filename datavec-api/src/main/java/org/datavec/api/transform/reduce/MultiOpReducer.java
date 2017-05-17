@@ -17,12 +17,14 @@
 package org.datavec.api.transform.reduce;
 
 import com.clearspring.analytics.stream.cardinality.HyperLogLogPlus;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.ReduceOp;
+import org.datavec.api.transform.condition.Condition;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.metadata.DoubleMetaData;
 import org.datavec.api.transform.metadata.IntegerMetaData;
@@ -33,6 +35,7 @@ import org.datavec.api.writable.*;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
+import java.io.Serializable;
 import java.util.*;
 
 /**
@@ -57,18 +60,20 @@ public class MultiOpReducer implements IAssociativeReducer {
     private final Set<String> keyColumnsSet;
     private final ReduceOp defaultOp;
     private final Map<String, List<ReduceOp>> opMap;
+    private Map<String, ConditionalReduction> conditionalReductions;
     private Map<String, AggregableColumnReduction> customReductions;
 
     private Set<String> ignoreInvalidInColumns;
 
     private MultiOpReducer(Builder builder) {
         this((builder.keyColumns == null ? null : Arrays.asList(builder.keyColumns)), builder.defaultOp, builder.opMap,
-                        builder.customReductions, builder.ignoreInvalidInColumns);
+                        builder.customReductions, builder.conditionalReductions, builder.ignoreInvalidInColumns);
     }
 
     public MultiOpReducer(@JsonProperty("keyColumns") List<String> keyColumns, @JsonProperty("defaultOp") ReduceOp defaultOp,
                           @JsonProperty("opMap") Map<String, List<ReduceOp>> opMap,
                           @JsonProperty("customReductions") Map<String, AggregableColumnReduction> customReductions,
+                          @JsonProperty("conditionalReductions") Map<String, ConditionalReduction> conditionalReductions,
                           @JsonProperty("ignoreInvalidInColumns") Set<String> ignoreInvalidInColumns) {
         this.keyColumns = keyColumns;
         this.keyColumnsSet = (keyColumns == null ? null : new HashSet<>(keyColumns));
@@ -81,6 +86,10 @@ public class MultiOpReducer implements IAssociativeReducer {
     @Override
     public void setInputSchema(Schema schema) {
         this.schema = schema;
+        //Conditions (if any) also need the input schema:
+        for (ConditionalReduction cr : conditionalReductions.values()) {
+            cr.getCondition().setInputSchema(schema);
+        }
     }
 
     @Override
@@ -124,6 +133,19 @@ public class MultiOpReducer implements IAssociativeReducer {
 
                 continue;
             }
+
+            //Second: check for conditional reductions on this column:
+            if (conditionalReductions != null && conditionalReductions.containsKey(name)) {
+                ConditionalReduction reduction = conditionalReductions.get(name);
+
+                String outName = reduction.getOutputName();
+                ColumnMetaData m = getMetaForColumn(reduction.getReduction(), name, inMeta);
+                m.setName(outName);
+                newMeta.add(m);
+
+                continue;
+            }
+
 
             //Otherwise: get the specified (built-in) reduction op
             //If no reduction op is specified for that column: use the default
@@ -220,351 +242,11 @@ public class MultiOpReducer implements IAssociativeReducer {
                 lop = Collections.singletonList(defaultOp);
 
             //Execute the reduction, store the result
-            ops.add(reduceColumn(lop, type, ignoreInvalidInColumns.contains(colName), schema.getMetaData(i)));
+            ops.add(AggregableReductionUtils.reduceColumn(lop, type, ignoreInvalidInColumns.contains(colName), schema.getMetaData(i)));
 
         }
 
         return new DispatchOp<>(ops);
-    }
-
-    public static IAggregableReduceOp<Writable, List<Writable>> reduceColumn(List<ReduceOp> op, ColumnType type,
-                                                                             boolean ignoreInvalid, ColumnMetaData metaData) {
-        switch (type) {
-            case Integer:
-                return reduceIntColumn(op, ignoreInvalid, metaData);
-            case Long:
-                return reduceLongColumn(op, ignoreInvalid, metaData);
-            case Float:
-                return reduceFloatColumn(op, ignoreInvalid, metaData);
-            case Double:
-                return reduceDoubleColumn(op, ignoreInvalid, metaData);
-            case String:
-            case Categorical:
-                return reduceStringOrCategoricalColumn(op, ignoreInvalid, metaData);
-            case Time:
-                return reduceTimeColumn(op, ignoreInvalid, metaData);
-            case Bytes:
-                return reduceBytesColumn(op, ignoreInvalid, metaData);
-            default:
-                throw new UnsupportedOperationException("Unknown or not implemented column type: " + type);
-        }
-    }
-
-    public static IAggregableReduceOp<Writable, List<Writable>> reduceIntColumn(List<ReduceOp> lop, boolean ignoreInvalid, ColumnMetaData metaData) {
-
-        List<IAggregableReduceOp<Integer, Writable>> res = new ArrayList<>(lop.size());
-        for (int i = 0; i < lop.size(); i++){
-            switch (lop.get(i)) {
-                case Prod:
-                    res.add(new AggregatorImpls.AggregableProd<Integer>());
-                    break;
-                case Min:
-                    res.add(new AggregatorImpls.AggregableMin<Integer>());
-                    break;
-                case Max:
-                    res.add(new AggregatorImpls.AggregableMax<Integer>());
-                    break;
-                case Range:
-                    res.add(new AggregatorImpls.AggregableRange<Integer>());
-                    break;
-                case Sum:
-                    res.add(new AggregatorImpls.AggregableSum<Integer>());
-                    break;
-                case Mean:
-                    res.add(new AggregatorImpls.AggregableMean<Integer>());
-                    break;
-                case Stdev:
-                    res.add(new AggregatorImpls.AggregableStdDev<Integer>());
-                    break;
-                case UncorrectedStdDev:
-                    res.add(new AggregatorImpls.AggregableUncorrectedStdDev<Integer>());
-                case Variance:
-                    res.add(new AggregatorImpls.AggregableVariance<Integer>());
-                case PopulationVariance:
-                    res.add(new AggregatorImpls.AggregablePopulationVariance<Integer>());
-                    break;
-                case Count:
-                    res.add(new AggregatorImpls.AggregableCount<Integer>());
-                    break;
-                case CountUnique:
-                    res.add(new AggregatorImpls.AggregableCountUnique<Integer>());
-                    break;
-                case TakeFirst:
-                    res.add(new AggregatorImpls.AggregableFirst<Integer>());
-                    break;
-                case TakeLast:
-                    res.add(new AggregatorImpls.AggregableLast<Integer>());
-                    break;
-                default:
-                    throw new UnsupportedOperationException("Unknown or not implemented op: " + lop.get(i));
-            }
-        }
-        IAggregableReduceOp<Writable, List<Writable>> thisOp = new IntWritableOp<>(new AggregableMultiOp<>(res));
-        if (ignoreInvalid)
-            return new AggregableCheckingOp<>(thisOp, metaData);
-        else
-            return thisOp;
-    }
-
-    public static IAggregableReduceOp<Writable, List<Writable>> reduceLongColumn(List<ReduceOp> lop, boolean ignoreInvalid, ColumnMetaData metaData) {
-
-        List<IAggregableReduceOp<Long, Writable>> res = new ArrayList<>(lop.size());
-        for (int i = 0; i < lop.size(); i++){
-            switch (lop.get(i)) {
-                case Prod:
-                    res.add(new AggregatorImpls.AggregableProd<Long>());
-                    break;
-                case Min:
-                    res.add(new AggregatorImpls.AggregableMin<Long>());
-                    break;
-                case Max:
-                    res.add(new AggregatorImpls.AggregableMax<Long>());
-                    break;
-                case Range:
-                    res.add(new AggregatorImpls.AggregableRange<Long>());
-                    break;
-                case Sum:
-                    res.add(new AggregatorImpls.AggregableSum<Long>());
-                    break;
-                case UncorrectedStdDev:
-                    res.add(new AggregatorImpls.AggregableUncorrectedStdDev<Long>());
-                case Variance:
-                    res.add(new AggregatorImpls.AggregableVariance<Long>());
-                case PopulationVariance:
-                    res.add(new AggregatorImpls.AggregablePopulationVariance<Long>());
-                    break;                case Mean:
-                    res.add(new AggregatorImpls.AggregableMean<Long>());
-                    break;
-                case Stdev:
-                    res.add(new AggregatorImpls.AggregableStdDev<Long>());
-                    break;
-                case Count:
-                    res.add(new AggregatorImpls.AggregableCount<Long>());
-                    break;
-                case CountUnique:
-                    res.add(new AggregatorImpls.AggregableCountUnique<Long>());
-                    break;
-                case TakeFirst:
-                    res.add(new AggregatorImpls.AggregableFirst<Long>());
-                    break;
-                case TakeLast:
-                    res.add(new AggregatorImpls.AggregableLast<Long>());
-                    break;
-                default:
-                    throw new UnsupportedOperationException("Unknown or not implemented op: " + lop.get(i));
-            }
-        }
-        IAggregableReduceOp<Writable, List<Writable>> thisOp = new LongWritableOp<>(new AggregableMultiOp<>(res));
-        if (ignoreInvalid)
-            return new AggregableCheckingOp<>(thisOp, metaData);
-        else
-            return thisOp;
-    }
-
-    public static IAggregableReduceOp<Writable, List<Writable>> reduceFloatColumn(List<ReduceOp> lop, boolean ignoreInvalid, ColumnMetaData metaData) {
-
-        List<IAggregableReduceOp<Float, Writable>> res = new ArrayList<>(lop.size());
-        for (int i = 0; i < lop.size(); i++){
-            switch (lop.get(i)) {
-                case Prod:
-                    res.add(new AggregatorImpls.AggregableProd<Float>());
-                    break;
-                case Min:
-                    res.add(new AggregatorImpls.AggregableMin<Float>());
-                    break;
-                case Max:
-                    res.add(new AggregatorImpls.AggregableMax<Float>());
-                    break;
-                case Range:
-                    res.add(new AggregatorImpls.AggregableRange<Float>());
-                    break;
-                case Sum:
-                    res.add(new AggregatorImpls.AggregableSum<Float>());
-                    break;
-                case Mean:
-                    res.add(new AggregatorImpls.AggregableMean<Float>());
-                    break;
-                case Stdev:
-                    res.add(new AggregatorImpls.AggregableStdDev<Float>());
-                    break;
-                case UncorrectedStdDev:
-                    res.add(new AggregatorImpls.AggregableUncorrectedStdDev<Float>());
-                case Variance:
-                    res.add(new AggregatorImpls.AggregableVariance<Float>());
-                case PopulationVariance:
-                    res.add(new AggregatorImpls.AggregablePopulationVariance<Float>());
-                    break;                case Count:
-                    res.add(new AggregatorImpls.AggregableCount<Float>());
-                    break;
-                case CountUnique:
-                    res.add(new AggregatorImpls.AggregableCountUnique<Float>());
-                    break;
-                case TakeFirst:
-                    res.add(new AggregatorImpls.AggregableFirst<Float>());
-                    break;
-                case TakeLast:
-                    res.add(new AggregatorImpls.AggregableLast<Float>());
-                    break;
-                default:
-                    throw new UnsupportedOperationException("Unknown or not implemented op: " + lop.get(i));
-            }
-        }
-        IAggregableReduceOp<Writable, List<Writable>> thisOp = new FloatWritableOp<>(new AggregableMultiOp<>(res));
-        if (ignoreInvalid)
-            return new AggregableCheckingOp<>(thisOp, metaData);
-        else
-            return thisOp;
-    }
-
-    public static IAggregableReduceOp<Writable, List<Writable>> reduceDoubleColumn(List<ReduceOp> lop, boolean ignoreInvalid, ColumnMetaData metaData) {
-
-        List<IAggregableReduceOp<Double, Writable>> res = new ArrayList<>(lop.size());
-        for (int i = 0; i < lop.size(); i++){
-            switch (lop.get(i)) {
-                case Prod:
-                    res.add(new AggregatorImpls.AggregableProd<Double>());
-                    break;
-                case Min:
-                    res.add(new AggregatorImpls.AggregableMin<Double>());
-                    break;
-                case Max:
-                    res.add(new AggregatorImpls.AggregableMax<Double>());
-                    break;
-                case Range:
-                    res.add(new AggregatorImpls.AggregableRange<Double>());
-                    break;
-                case Sum:
-                    res.add(new AggregatorImpls.AggregableSum<Double>());
-                    break;
-                case Mean:
-                    res.add(new AggregatorImpls.AggregableMean<Double>());
-                    break;
-                case Stdev:
-                    res.add(new AggregatorImpls.AggregableStdDev<Double>());
-                    break;
-                case UncorrectedStdDev:
-                    res.add(new AggregatorImpls.AggregableUncorrectedStdDev<Double>());
-                case Variance:
-                    res.add(new AggregatorImpls.AggregableVariance<Double>());
-                case PopulationVariance:
-                    res.add(new AggregatorImpls.AggregablePopulationVariance<Double>());
-                    break;                case Count:
-                    res.add(new AggregatorImpls.AggregableCount<Double>());
-                    break;
-                case CountUnique:
-                    res.add(new AggregatorImpls.AggregableCountUnique<Double>());
-                    break;
-                case TakeFirst:
-                    res.add(new AggregatorImpls.AggregableFirst<Double>());
-                    break;
-                case TakeLast:
-                    res.add(new AggregatorImpls.AggregableLast<Double>());
-                    break;
-                default:
-                    throw new UnsupportedOperationException("Unknown or not implemented op: " + lop.get(i));
-            }
-        }
-        IAggregableReduceOp<Writable, List<Writable>> thisOp = new DoubleWritableOp<>(new AggregableMultiOp<>(res));
-        if (ignoreInvalid)
-            return new AggregableCheckingOp<>(thisOp, metaData);
-        else
-            return thisOp;
-    }
-
-    public static IAggregableReduceOp<Writable, List<Writable>> reduceStringOrCategoricalColumn(List<ReduceOp> lop, boolean ignoreInvalid, ColumnMetaData metaData) {
-
-        List<IAggregableReduceOp<String, Writable>> res = new ArrayList<>(lop.size());
-        for (int i = 0; i < lop.size(); i++){
-            switch (lop.get(i)) {
-                case Count:
-                    res.add(new AggregatorImpls.AggregableCount<String>());
-                    break;
-                case CountUnique:
-                    res.add(new AggregatorImpls.AggregableCountUnique<String>());
-                    break;
-                case TakeFirst:
-                    res.add(new AggregatorImpls.AggregableFirst<String>());
-                    break;
-                case TakeLast:
-                    res.add(new AggregatorImpls.AggregableLast<String>());
-                    break;
-                default:
-                    throw new UnsupportedOperationException("Cannot execute op \"" + lop.get(i) + "\" on String/Categorical column "
-                            + "(can only perform Count, CountUnique, TakeFirst and TakeLast ops on categorical columns)");
-            }
-        }
-
-        IAggregableReduceOp<Writable, List<Writable>> thisOp = new StringWritableOp<>(new AggregableMultiOp<>(res));
-        if (ignoreInvalid)
-            return new AggregableCheckingOp<>(thisOp, metaData);
-        else
-            return thisOp;
-    }
-
-    public static IAggregableReduceOp<Writable, List<Writable>> reduceTimeColumn(List<ReduceOp> lop, boolean ignoreInvalid, ColumnMetaData metaData) {
-
-        List<IAggregableReduceOp<Long, Writable>> res = new ArrayList<>(lop.size());
-        for (int i = 0; i < lop.size(); i++){
-            switch (lop.get(i)) {
-                case Min:
-                    res.add(new AggregatorImpls.AggregableMin<Long>());
-                    break;
-                case Max:
-                    res.add(new AggregatorImpls.AggregableMax<Long>());
-                    break;
-                case Range:
-                    res.add(new AggregatorImpls.AggregableRange<Long>());
-                    break;
-                case Mean:
-                    res.add(new AggregatorImpls.AggregableMean<Long>());
-                    break;
-                case Stdev:
-                    res.add(new AggregatorImpls.AggregableMean<Long>());
-                    break;
-                case Count:
-                    res.add(new AggregatorImpls.AggregableCount<Long>());
-                    break;
-                case CountUnique:
-                    res.add(new AggregatorImpls.AggregableCountUnique<Long>());
-                    break;
-                case TakeFirst:
-                    res.add(new AggregatorImpls.AggregableFirst<Long>());
-                    break;
-                case TakeLast:
-                    res.add(new AggregatorImpls.AggregableLast<Long>());
-                    break;
-                default:
-                    throw new UnsupportedOperationException("Reduction op \"" + lop.get(i) + "\" not supported on time columns");
-            }
-        }
-        IAggregableReduceOp<Writable, List<Writable>> thisOp = new LongWritableOp<>(new AggregableMultiOp<>(res));
-        if (ignoreInvalid)
-            return new AggregableCheckingOp<>(thisOp, metaData);
-        else
-            return thisOp;
-    }
-
-    public static IAggregableReduceOp<Writable, List<Writable>> reduceBytesColumn(List<ReduceOp> lop, boolean ignoreInvalid, ColumnMetaData metaData) {
-
-        List<IAggregableReduceOp<Byte, Writable>> res = new ArrayList<>(lop.size());
-        for (int i = 0; i < lop.size(); i++){
-            switch (lop.get(i)) {
-                case TakeFirst:
-                    res.add(new AggregatorImpls.AggregableFirst<Byte>());
-                    break;
-                case TakeLast:
-                    res.add(new AggregatorImpls.AggregableLast<Byte>());
-                    break;
-                default:
-                    throw new UnsupportedOperationException("Cannot execute op \"" + lop.get(i) + "\" on Bytes column "
-                            + "(can only perform TakeFirst and TakeLast ops on bytes columns)");
-            }
-        }
-        IAggregableReduceOp<Writable, List<Writable>> thisOp = new ByteWritableOp<>(new AggregableMultiOp<>(res));
-        if (ignoreInvalid)
-            return new AggregableCheckingOp<>(thisOp, metaData);
-        else
-            return thisOp;
     }
 
     @Override
@@ -580,6 +262,9 @@ public class MultiOpReducer implements IAssociativeReducer {
         if (customReductions != null) {
             sb.append(",customReductions=").append(customReductions);
         }
+        if (conditionalReductions != null) {
+            sb.append(",conditionalReductions=").append(conditionalReductions);
+        }
         if (ignoreInvalidInColumns != null) {
             sb.append(",ignoreInvalidInColumns=").append(ignoreInvalidInColumns);
         }
@@ -593,6 +278,7 @@ public class MultiOpReducer implements IAssociativeReducer {
         private ReduceOp defaultOp;
         private Map<String, List<ReduceOp>> opMap = new HashMap<>();
         private Map<String, AggregableColumnReduction> customReductions = new HashMap<>();
+        private Map<String, ConditionalReduction> conditionalReductions = new HashMap<>();
         private Set<String> ignoreInvalidInColumns = new HashSet<>();
         private String[] keyColumns;
 
@@ -709,6 +395,22 @@ public class MultiOpReducer implements IAssociativeReducer {
             return this;
         }
 
+
+        /**
+         * Conditional reduction: apply the reduce on a specified column, where the reduction occurs *only* on those
+         * examples where the condition returns true. Examples where the condition does not apply (returns false) are
+         * ignored/excluded.
+         *
+         * @param column     Name of the column to execute the conditional reduction on
+         * @param outputName Name of the column, after the reduction has been executed
+         * @param reduction  Reduction to execute
+         * @param condition  Condition to use in the reductions
+         */
+        public Builder conditionalReduction(String column, String outputName, ReduceOp reduction, Condition condition) {
+            this.conditionalReductions.put(column, new ConditionalReduction(column, outputName, reduction, condition));
+            return this;
+        }
+
         /**
          * When doing the reduction: set the specified columns to ignore any invalid values.
          * Invalid: defined as being not valid according to the ColumnMetaData: {@link ColumnMetaData#isValid(Writable)}.
@@ -727,5 +429,14 @@ public class MultiOpReducer implements IAssociativeReducer {
         }
     }
 
+
+    @AllArgsConstructor
+    @Data
+    public static class ConditionalReduction implements Serializable {
+        private final String columnName;
+        private final String outputName;
+        private final ReduceOp reduction;
+        private final Condition condition;
+    }
 
 }

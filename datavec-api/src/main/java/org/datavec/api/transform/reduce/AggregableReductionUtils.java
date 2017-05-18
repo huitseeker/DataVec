@@ -306,9 +306,15 @@ public class AggregableReductionUtils {
                 case TakeLast:
                     res.add(new AggregatorImpls.AggregableLast<String>());
                     break;
+                case Append:
+                    res.add(new StringAggregatorImpls.AggregableStringAppend());
+                    break;
+                case Prepend:
+                    res.add(new StringAggregatorImpls.AggregableStringPrepend());
+                    break;
                 default:
                     throw new UnsupportedOperationException("Cannot execute op \"" + lop.get(i) + "\" on String/Categorical column "
-                            + "(can only perform Count, CountUnique, TakeFirst and TakeLast ops on categorical columns)");
+                            + "(can only perform Append, Prepend, Count, CountUnique, TakeFirst and TakeLast ops on categorical columns)");
             }
         }
 

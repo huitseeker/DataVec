@@ -12,7 +12,7 @@ import java.util.Collections;
  */
 public class StringAggregatorImpls {
 
-    public static abstract class AggregableStringReduce implements IAggregableReduceOp<String, Writable> {
+    private static abstract class AggregableStringReduce implements IAggregableReduceOp<String, Writable> {
         @Getter
         protected StringBuilder sb = new StringBuilder();
     }
@@ -52,31 +52,7 @@ public class StringAggregatorImpls {
 
         @Override
         public Writable get() {
-            return new Text(sb.toString());
-        }
-    }
-
-    public static class AggregableStringReplace extends AggregatorImpls.AggregableLast<String>{
-        // This operation is *weird*
-        @Getter
-        int callCount = 0;
-
-        @Override
-        public void accept(String s){
-            callCount += 1;
-            if (callCount > 2) throw new IllegalArgumentException("Unable to run replace on columns > 2");
-            else super.accept(s);
-        }
-
-        @Override
-        public <W extends IAggregableReduceOp<String, Writable>> void combine (W accu){
-            if (accu instanceof AggregableStringReplace) {
-                AggregableStringReplace accumulator = ((AggregableStringReplace) accu);
-                if (callCount + accumulator.getCallCount() > 2)
-                    throw new IllegalArgumentException("Unable to run replace on columns > 2");
-                else
-                    super.combine(accu);
-            }
+            return new Text(sb.reverse().toString());
         }
     }
 

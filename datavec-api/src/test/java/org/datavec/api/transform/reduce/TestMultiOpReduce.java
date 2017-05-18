@@ -131,6 +131,43 @@ public class TestMultiOpReduce {
         }
     }
 
+
+    @Test
+    public void testReduceString() {
+
+        List<List<Writable>> inputs = new ArrayList<>();
+        inputs.add(Arrays.asList((Writable) new Text("someKey"), new Text("1")));
+        inputs.add(Arrays.asList((Writable) new Text("someKey"), new Text("2")));
+        inputs.add(Arrays.asList((Writable) new Text("someKey"), new Text("3")));
+        inputs.add(Arrays.asList((Writable) new Text("someKey"), new Text("4")));
+
+        Map<ReduceOp, String> exp = new LinkedHashMap<>();
+        exp.put(ReduceOp.Append, "1234");
+        exp.put(ReduceOp.Prepend, "4321");
+
+        for (ReduceOp op : exp.keySet()) {
+
+            Schema schema = new Schema.Builder().addColumnString("key").addColumnsString("column").build();
+
+            MultiOpReducer reducer = new MultiOpReducer.Builder(op).keyColumns("key").build();
+
+            reducer.setInputSchema(schema);
+            IAggregableReduceOp<List<Writable>, List<Writable>> accumulator = reducer.aggregableReducer();
+
+            for (int i = 0; i < inputs.size(); i++){
+                accumulator.accept(inputs.get(i));
+            }
+            List<Writable> out = accumulator.get();
+
+            assertEquals(2, out.size());
+
+            assertEquals(out.get(0), new Text("someKey"));
+
+            String msg = op.toString();
+            assertEquals(msg, exp.get(op), out.get(1).toString());
+        }
+    }
+
     @Test
     public void testReduceIntegerIgnoreInvalidValues() {
 

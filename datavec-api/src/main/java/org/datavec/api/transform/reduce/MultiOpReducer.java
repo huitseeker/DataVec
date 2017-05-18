@@ -187,6 +187,9 @@ public class MultiOpReducer implements IAssociativeReducer {
             case PopulationVariance:
             case UncorrectedStdDev:
                 return new DoubleMetaData(getOutNameForColumn(op, name));
+            case Append:
+            case Prepend:
+                return new StringMetaData(getOutNameForColumn(op, name));
             case Count: //Always Long
             case CountUnique:
                 return new LongMetaData(getOutNameForColumn(op, name), 0L, null);
@@ -430,6 +433,18 @@ public class MultiOpReducer implements IAssociativeReducer {
         public Builder takeLastColumns(String... columns) {
             return add(ReduceOp.TakeLast, columns);
         }
+
+        /**
+         * Reduce the specified columns by taking the concatenation of all content
+         * Beware, the output will be huge!
+         */
+        public Builder appendColumns(String... columns) { return add(ReduceOp.Append, columns); }
+
+        /**
+         * Reduce the specified columns by taking the concatenation of all content in the reverse order
+         * Beware, the output will be huge!
+         */
+        public Builder prependColumns(String... columns) { return add(ReduceOp.Prepend, columns); }
 
         /**
          * Reduce the specified column using a custom column reduction functionality.

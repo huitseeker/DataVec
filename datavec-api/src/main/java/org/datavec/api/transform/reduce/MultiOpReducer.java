@@ -23,10 +23,7 @@ import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.ReduceOp;
 import org.datavec.api.transform.condition.column.TrivialColumnCondition;
 import org.datavec.api.transform.condition.Condition;
-import org.datavec.api.transform.metadata.ColumnMetaData;
-import org.datavec.api.transform.metadata.DoubleMetaData;
-import org.datavec.api.transform.metadata.IntegerMetaData;
-import org.datavec.api.transform.metadata.LongMetaData;
+import org.datavec.api.transform.metadata.*;
 import org.datavec.api.transform.ops.*;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.*;
@@ -191,10 +188,15 @@ public class MultiOpReducer implements IAssociativeReducer {
                 return new DoubleMetaData("mean(" + name + ")");
             case Stdev:
                 return new DoubleMetaData("stdev(" + name + ")");
-            case Count:
+            case Variance:
+                return new DoubleMetaData("variance(" + name + ")");
+            case PopulationVariance:
+                return new DoubleMetaData("popVariance(" + name + ")");
+            case UncorrectedStdDev:
+                return new DoubleMetaData("uncorrectedStdDev(" + name + ")");
+            case Count: //Always long
                 return new LongMetaData("count", 0L, null);
-            case CountUnique:
-                //Always long
+            case CountUnique: //Always long
                 return new LongMetaData("countUnique(" + name + ")", 0L, null);
             default:
                 throw new UnsupportedOperationException("Unknown or not implemented op: " + op);

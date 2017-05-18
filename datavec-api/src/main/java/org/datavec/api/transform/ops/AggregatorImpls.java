@@ -302,50 +302,11 @@ public class AggregatorImpls {
      * See https://en.wikipedia.org/wiki/Unbiased_estimation_of_standard_deviation
      * This is computed with Welford's method for increased numerical stability & aggregability.
      */
-    public static class AggregableUncorrectedStdDev<T extends Number> implements IAggregableReduceOp<T, Writable> {
+    public static class AggregableUncorrectedStdDev<T extends Number> extends AggregableStdDev<T> {
 
-        @Getter
-        private Long count = 0L;
-        @Getter
-        private Double mean = 0D;
-        @Getter
-        private Double variation = 0D;
-
-
-        public void accept(T n) {
-            if (count == 0) {
-                count = 1L;
-                mean = n.doubleValue();
-                variation = 0D;
-            } else {
-                Long newCount = count + 1;
-                Double newMean = mean + (n.doubleValue() - mean) / newCount;
-                Double newvariation = variation + (n.doubleValue() - mean) * (n.doubleValue() - newMean);
-                count = newCount;
-                mean = newMean;
-                variation = newvariation;
-            }
-        }
-
-        public <U extends IAggregableReduceOp<T, Writable>> void combine(U acc) {
-            if (acc instanceof AggregableStdDev) {
-                AggregableStdDev<T> accu = (AggregableStdDev <T>)acc;
-
-                Long totalCount = count + accu.getCount();
-                Double totalMean =
-                        (accu.getMean() * accu.getCount() + mean * count) / totalCount;
-                // the variance of the union is the sum of variances
-                Double variance = variation / (count - 1);
-                Double otherVariance = accu.getVariation() / (accu.getCount() - 1);
-                Double totalVariation = (variance + otherVariance) * (totalCount - 1);
-                count = totalCount;
-                mean = totalMean;
-                variation = variation;
-            }
-        }
-
+        @Override
         public Writable get() {
-            return new DoubleWritable(Math.sqrt(variation / count));
+            return new DoubleWritable(Math.sqrt(this.getVariation() / this.getCount()));
         }
     }
 
@@ -412,50 +373,11 @@ public class AggregatorImpls {
      * See https://en.wikipedia.org/wiki/Variance#Population_variance_and_sample_variance
      * This is computed with Welford's method for increased numerical stability & aggregability.
      */
-    public static class AggregablePopulationVariance<T extends Number> implements IAggregableReduceOp<T, Writable> {
+    public static class AggregablePopulationVariance<T extends Number> extends AggregableVariance<T> {
 
-        @Getter
-        private Long count = 0L;
-        @Getter
-        private Double mean = 0D;
-        @Getter
-        private Double variation = 0D;
-
-
-        public void accept(T n) {
-            if (count == 0) {
-                count = 1L;
-                mean = n.doubleValue();
-                variation = 0D;
-            } else {
-                Long newCount = count + 1;
-                Double newMean = mean + (n.doubleValue() - mean) / newCount;
-                Double newvariation = variation + (n.doubleValue() - mean) * (n.doubleValue() - newMean);
-                count = newCount;
-                mean = newMean;
-                variation = newvariation;
-            }
-        }
-
-        public <U extends IAggregableReduceOp<T, Writable>> void combine(U acc) {
-            if (acc instanceof AggregableStdDev) {
-                AggregableStdDev<T> accu = (AggregableStdDev<T>) acc;
-
-                Long totalCount = count + accu.getCount();
-                Double totalMean =
-                        (accu.getMean() * accu.getCount() + mean * count) / totalCount;
-                // the variance of the union is the sum of variances
-                Double variance = variation / (count - 1);
-                Double otherVariance = accu.getVariation() / (accu.getCount() - 1);
-                Double totalVariation = (variance + otherVariance) * (totalCount - 1);
-                count = totalCount;
-                mean = totalMean;
-                variation = variation;
-            }
-        }
-
+        @Override
         public Writable get() {
-            return new DoubleWritable(variation / count);
+            return new DoubleWritable(this.getVariation() / this.getCount());
         }
     }
 

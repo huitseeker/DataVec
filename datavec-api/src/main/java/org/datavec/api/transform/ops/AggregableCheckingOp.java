@@ -10,6 +10,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * A variant of {@link IAggregableReduceOp} exercised on a {@link Writable} that takes schema metadata
+ * in its constructor, and checks the input {@link Writable} against the schema before accepting it.
+ *
  * Created by huitseeker on 5/8/17.
  */
 @AllArgsConstructor

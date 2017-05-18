@@ -13,6 +13,11 @@ import java.util.Collections;
 import java.util.List;
 
 /**
+ * This class transforms a list of {@link IAggregableReduceOp} on one single field, each returning a {@link Writable}
+ * and transforms it into an operation on that single column, that returns a {@link Writable} list.
+ *
+ * It is used to execute many reduction operations in parallel on the same column, datavec#238
+ *
  * Created by huitseeker on 5/8/17.
  */
 @AllArgsConstructor

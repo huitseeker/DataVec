@@ -34,10 +34,12 @@ import java.io.Serializable;
 import java.util.*;
 
 /**
- * A StringReducer is used to take a set of examples and reduce them.
+ * A MultiOpReducer is used to take a set of examples and reduce them.
  * The idea: suppose you have a large number of columns, and you want to combine/reduce the values in each column.<br>
  * StringReducer allows you to specify different reductions for differently for different columns: min, max, sum, mean etc.
  * See {@link Builder} and {@link ReduceOp} for the full list.<br>
+ * Note this supports executing multipe reducitons per column: simply call the Builder with Xcolumn() repeatedly
+ * on the same column.
  * <p>
  * Uses are:
  * (1) Reducing examples by a key

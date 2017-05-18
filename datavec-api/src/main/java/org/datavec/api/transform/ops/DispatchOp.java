@@ -8,6 +8,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * This class takes many {@link IAggregableReduceOp}, each acting on one field, and each returning several
+ * {@link Writable} elements, in the form of a list of {@link Writable}. It produces a reduce operation that
+ * distributes a list of {@link Writable} elements to these operations, one per operation.
+ *
+ * It is assumed that if you receive k {@link Writable} elements, you should have exactly k {@link IAggregableReduceOp}
+ * operations to process them with. Any additional operations or elements (whichever is larger) will be ignored.
+ *
  * Created by huitseeker on 5/14/17.
  */
 @AllArgsConstructor

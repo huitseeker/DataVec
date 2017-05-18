@@ -8,6 +8,8 @@ import org.datavec.api.writable.Writable;
 import java.util.Collections;
 
 /**
+ * Groups useful {@link IAggregableReduceOp} utilities on Strings
+ *
  * Created by huitseeker on 5/18/17.
  */
 public class StringAggregatorImpls {

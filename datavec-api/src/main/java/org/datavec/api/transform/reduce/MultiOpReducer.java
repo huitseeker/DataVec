@@ -364,6 +364,25 @@ public class MultiOpReducer implements IAssociativeReducer {
         }
 
         /**
+         * Reduce the specified columns by taking the uncorrected standard deviation of the values
+         */
+        public Builder uncorrectedStdevColumns(String... columns) {
+            return add(ReduceOp.Stdev, columns);
+        }
+        /**
+         * Reduce the specified columns by taking the variance of the values
+         */
+        public Builder variance(String... columns) {
+            return add(ReduceOp.Variance, columns);
+        }
+        /**
+         * Reduce the specified columns by taking the standard deviation of the values
+         */
+        public Builder populationVariance(String... columns) {
+            return add(ReduceOp.PopulationVariance, columns);
+        }
+
+        /**
          * Reduce the specified columns by counting the number of values
          */
         public Builder countColumns(String... columns) {

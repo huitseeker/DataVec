@@ -1108,7 +1108,7 @@ public class TestTransforms {
 
         Schema expOutSchema = new SequenceSchema.Builder()
                 .addColumnDouble("mean(col0)")
-                .addColumn(new LongMetaData("count",0L,null))
+                .addColumn(new LongMetaData("count(col1)",0L,null))
                 .addColumnDouble("max(col2)")
                 .build();
 

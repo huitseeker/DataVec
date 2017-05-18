@@ -17,7 +17,6 @@ public class StringAggregatorImpls {
         protected StringBuilder sb = new StringBuilder();
     }
 
-
     public static class AggregableStringAppend extends AggregableStringReduce {
 
         @Override

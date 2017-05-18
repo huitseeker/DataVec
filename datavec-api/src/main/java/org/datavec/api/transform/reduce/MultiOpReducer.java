@@ -154,50 +154,42 @@ public class MultiOpReducer implements IAssociativeReducer {
         return schema.newSchema(newMeta);
     }
 
+    private static String getOutNameForColumn(ReduceOp op, String name){
+        return op.name().toLowerCase() + "(" + name + ")";
+    }
+
     private static ColumnMetaData getMetaForColumn(ReduceOp op, String name, ColumnMetaData inMeta) {
         inMeta = inMeta.clone();
         switch (op) {
+            // type-preserving operations
             case Min:
-                inMeta.setName("min(" + name + ")");
-                return inMeta;
             case Max:
-                inMeta.setName("max(" + name + ")");
-                return inMeta;
             case Range:
-                inMeta.setName("range(" + name + ")");
-                return inMeta;
             case TakeFirst:
-                inMeta.setName("first(" + name + ")");
-                return inMeta;
             case TakeLast:
-                inMeta.setName("last(" + name + ")");
+                inMeta.setName(getOutNameForColumn(op, name));
                 return inMeta;
+            case Prod:
             case Sum:
-                String outName = "sum(" + name + ")";
-                //Issue with sum: the input meta data restrictions probably won't hold. But the data _type_ should essentially remain the same
+                String outName = getOutNameForColumn(op, name);
+                //Issue with prod/sum: the input meta data restrictions probably won't hold. But the data _type_ should essentially remain the same
                 ColumnMetaData outMeta;
                 if (inMeta instanceof IntegerMetaData || inMeta instanceof LongMetaData || inMeta instanceof DoubleMetaData) {
                     outMeta = new DoubleMetaData(outName);
-                } else {
-                    //Sum doesn't really make sense to sum other column types anyway...
+                } else { //Sum/Prod doesn't really make sense to sum other column types anyway...
                     outMeta = inMeta;
                 }
                 outMeta.setName(outName);
                 return outMeta;
             case Mean:
-                return new DoubleMetaData("mean(" + name + ")");
             case Stdev:
-                return new DoubleMetaData("stdev(" + name + ")");
             case Variance:
-                return new DoubleMetaData("variance(" + name + ")");
             case PopulationVariance:
-                return new DoubleMetaData("popVariance(" + name + ")");
             case UncorrectedStdDev:
-                return new DoubleMetaData("uncorrectedStdDev(" + name + ")");
-            case Count: //Always long
-                return new LongMetaData("count", 0L, null);
-            case CountUnique: //Always long
-                return new LongMetaData("countUnique(" + name + ")", 0L, null);
+                return new DoubleMetaData(getOutNameForColumn(op, name));
+            case Count: //Always Long
+            case CountUnique:
+                return new LongMetaData(getOutNameForColumn(op, name), 0L, null);
             default:
                 throw new UnsupportedOperationException("Unknown or not implemented op: " + op);
         }
@@ -265,7 +257,7 @@ public class MultiOpReducer implements IAssociativeReducer {
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder("StringReducer(");
+        StringBuilder sb = new StringBuilder("Reducer(");
         if (keyColumns != null) {
             sb.append("keyColumns=").append(keyColumns).append(",");
         }
@@ -298,7 +290,7 @@ public class MultiOpReducer implements IAssociativeReducer {
 
 
         /**
-         * Create a StringReducer builder, and set the default column reduction operation.
+         * Create a Reducer builder, and set the default column reduction operation.
          * For any columns that aren't specified explicitly, they will use the default reduction operation.
          * If a column does have a reduction operation explicitly specified, then it will override
          * the default specified here.
@@ -323,7 +315,22 @@ public class MultiOpReducer implements IAssociativeReducer {
 
         private Builder add(ReduceOp op, String[] cols) {
             for (String s : cols) {
-                opMap.put(s, Collections.singletonList(op));
+                List<ReduceOp> ops = new ArrayList<>();
+                if (opMap.containsKey(s))
+                    ops.addAll(opMap.get(s));
+                ops.add(op);
+                opMap.put(s, ops);
+            }
+            return this;
+        }
+
+        private Builder addAll(List<ReduceOp> ops, String[] cols) {
+            for (String s : cols) {
+                List<ReduceOp> theseOps = new ArrayList<>();
+                if (opMap.containsKey(s))
+                    theseOps.addAll(opMap.get(s));
+                theseOps.addAll(ops);
+                opMap.put(s, theseOps);
             }
             return this;
         }
@@ -347,6 +354,13 @@ public class MultiOpReducer implements IAssociativeReducer {
          */
         public Builder sumColumns(String... columns) {
             return add(ReduceOp.Sum, columns);
+        }
+
+        /**
+         * Reduce the specified columns by taking the product of values
+         */
+        public Builder prodColumns(String... columns) {
+            return add(ReduceOp.Prod, columns);
         }
 
         /**
@@ -427,7 +441,6 @@ public class MultiOpReducer implements IAssociativeReducer {
             customReductions.put(column, columnReduction);
             return this;
         }
-
 
         /**
          * Conditional reduction: apply the reduces on a specified column, where the reduction occurs *only* on those

@@ -417,7 +417,7 @@ public class TestMultiOpReduce {
 
         Schema outSchema = reducer.transform(schema);
         assertEquals(4, outSchema.numColumns());
-        assertEquals(Arrays.asList("key", "sumOfAs", "countUnique(filterCol)", "countUnique(textCol)"),
+        assertEquals(Arrays.asList("key", "sumOfAs", "countunique(filterCol)", "countunique(textCol)"),
                         outSchema.getColumnNames());
         assertEquals(Arrays.asList(ColumnType.String, ColumnType.Double, ColumnType.Long, ColumnType.Long),
                         outSchema.getColumnTypes());

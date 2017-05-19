@@ -144,6 +144,7 @@ public class AggregableReductionUtils {
                     break;
                 case Variance:
                     res.add(new AggregatorImpls.AggregableVariance<Long>());
+                    break;
                 case PopulationVariance:
                     res.add(new AggregatorImpls.AggregablePopulationVariance<Long>());
                     break;

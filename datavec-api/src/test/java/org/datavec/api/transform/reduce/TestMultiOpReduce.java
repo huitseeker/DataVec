@@ -234,7 +234,7 @@ public class TestMultiOpReduce {
     }
 
 
-    @Ignore
+    @Test
     public void testCustomReductions() {
 
         List<List<Writable>> inputs = new ArrayList<>();
@@ -247,7 +247,7 @@ public class TestMultiOpReduce {
         inputs.add(Arrays.asList((Writable) new Text("someKey"), new IntWritable(4), new Text("three"),
                         new DoubleWritable(3)));
 
-        List<Writable> expected = Arrays.asList((Writable) new Text("someKey"), new LongWritable(10), new Text("one"),
+        List<Writable> expected = Arrays.asList((Writable) new Text("someKey"), new IntWritable(10), new Text("one"),
                         new DoubleWritable(1));
 
 
@@ -274,7 +274,7 @@ public class TestMultiOpReduce {
         //Check schema:
         String[] expNames = new String[] {"key", "sum(intCol)", "myCustomReduce(textCol)", "myCustomReduce(doubleCol)"};
         ColumnType[] expTypes =
-                        new ColumnType[] {ColumnType.String, ColumnType.Long, ColumnType.String, ColumnType.String};
+                        new ColumnType[] {ColumnType.String, ColumnType.Integer, ColumnType.String, ColumnType.String};
         Schema outSchema = reducer.transform(schema);
 
         assertEquals(4, outSchema.numColumns());
@@ -446,7 +446,7 @@ public class TestMultiOpReduce {
             accumulator.accept(inputs.get(i));
         }
         List<Writable> out = accumulator.get();
-        List<Writable> expected = Arrays.<Writable>asList(new Text("someKey"), new DoubleWritable(1+ 3 + 5),
+        List<Writable> expected = Arrays.<Writable>asList(new Text("someKey"), new IntWritable(1+ 3 + 5),
                         new LongWritable(2), new LongWritable(4));
 
         assertEquals(4, out.size());
@@ -456,7 +456,7 @@ public class TestMultiOpReduce {
         assertEquals(4, outSchema.numColumns());
         assertEquals(Arrays.asList("key", "sumOfAs", "countunique(filterCol)", "countunique(textCol)"),
                         outSchema.getColumnNames());
-        assertEquals(Arrays.asList(ColumnType.String, ColumnType.Double, ColumnType.Long, ColumnType.Long),
+        assertEquals(Arrays.asList(ColumnType.String, ColumnType.Integer, ColumnType.Long, ColumnType.Long),
                         outSchema.getColumnTypes());
     }
 }

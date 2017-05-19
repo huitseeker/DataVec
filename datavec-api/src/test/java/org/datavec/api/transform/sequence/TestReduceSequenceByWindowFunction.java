@@ -74,17 +74,17 @@ public class TestReduceSequenceByWindowFunction {
         assertEquals(4, postApply.size());
 
 
-        List<Writable> exp0 = Arrays.asList((Writable) new LongWritable(1451606400000L), new DoubleWritable(0 + 1 + 2));
+        List<Writable> exp0 = Arrays.asList((Writable) new LongWritable(1451606400000L), new IntWritable(0 + 1 + 2));
         assertEquals(exp0, postApply.get(0));
 
-        List<Writable> exp1 = Arrays.asList((Writable) new LongWritable(1451606400000L + 1000L), new DoubleWritable(3.0));
+        List<Writable> exp1 = Arrays.asList((Writable) new LongWritable(1451606400000L + 1000L), new IntWritable(3));
         assertEquals(exp1, postApply.get(1));
 
         // here, takefirst of an empty window -> nullwritable makes more sense
-        List<Writable> exp2 = Arrays.asList((Writable) new NullWritable(), new DoubleWritable(0));
+        List<Writable> exp2 = Arrays.asList((Writable) NullWritable.INSTANCE, NullWritable.INSTANCE);
         assertEquals(exp2, postApply.get(2));
 
-        List<Writable> exp3 = Arrays.asList((Writable) new LongWritable(1451606400000L + 3000L), new DoubleWritable(9.0));
+        List<Writable> exp3 = Arrays.asList((Writable) new LongWritable(1451606400000L + 3000L), new IntWritable(9));
         assertEquals(exp3, postApply.get(3));
     }
 

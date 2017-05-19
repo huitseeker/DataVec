@@ -3,7 +3,9 @@ package org.datavec.api.transform.ops;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -20,12 +22,12 @@ public class AggregatorImplsTest {
     private List<String> stringList = new ArrayList<>(Arrays.asList("arakoa", "abracadabra", "blast", "acceptance"));
 
     @Test
-    public void AggregableFirstTest(){
+    public void aggregableFirstTest(){
         AggregatorImpls.AggregableFirst<Integer> first = new AggregatorImpls.AggregableFirst<>();
         for (int i = 0; i < intList.size(); i++){
             first.accept(intList.get(i));
         }
-        assertTrue(first.get().toInt() == 1);
+        assertEquals(1, first.get().toInt());
 
         AggregatorImpls.AggregableFirst<String> firstS = new AggregatorImpls.AggregableFirst<>();
         for (int i = 0; i < stringList.size(); i++){
@@ -39,17 +41,17 @@ public class AggregatorImplsTest {
             reverse.accept(intList.get(intList.size() - i - 1));
         }
         first.combine(reverse);
-        assertTrue(first.get().toInt() == 1);
+        assertEquals(1, first.get().toInt());
     }
 
 
     @Test
-    public void AggregableLastTest(){
+    public void aggregableLastTest(){
         AggregatorImpls.AggregableLast<Integer> last = new AggregatorImpls.AggregableLast<>();
         for (int i = 0; i < intList.size(); i++){
             last.accept(intList.get(i));
         }
-        assertTrue(last.get().toInt() == 9);
+        assertEquals(9, last.get().toInt());
 
         AggregatorImpls.AggregableLast<String> lastS = new AggregatorImpls.AggregableLast<>();
         for (int i = 0; i < stringList.size(); i++){
@@ -63,22 +65,22 @@ public class AggregatorImplsTest {
             reverse.accept(intList.get(intList.size() - i - 1));
         }
         last.combine(reverse);
-        assertTrue(last.get().toInt() == 1);
+        assertEquals(1, last.get().toInt());
     }
 
     @Test
-    public void AggregableCountTest(){
+    public void aggregableCountTest(){
         AggregatorImpls.AggregableCount<Integer> cnt = new AggregatorImpls.AggregableCount<>();
         for (int i = 0; i < intList.size(); i++){
             cnt.accept(intList.get(i));
         }
-        assertTrue(cnt.get().toInt() == 9);
+        assertEquals(9, cnt.get().toInt());
 
         AggregatorImpls.AggregableCount<String> lastS = new AggregatorImpls.AggregableCount<>();
         for (int i = 0; i < stringList.size(); i++){
             lastS.accept(stringList.get(i));
         }
-        assertTrue(lastS.get().toInt() == 4);
+        assertEquals(4, lastS.get().toInt());
 
 
         AggregatorImpls.AggregableCount<Integer> reverse = new AggregatorImpls.AggregableCount<>();
@@ -86,16 +88,16 @@ public class AggregatorImplsTest {
             reverse.accept(intList.get(intList.size() - i - 1));
         }
         cnt.combine(reverse);
-        assertTrue(cnt.get().toInt() == 18);
+        assertEquals(18, cnt.get().toInt());
     }
 
     @Test
-    public void AggregableMaxTest(){
+    public void aggregableMaxTest(){
         AggregatorImpls.AggregableMax<Integer> mx = new AggregatorImpls.AggregableMax<>();
         for (int i = 0; i < intList.size(); i++){
             mx.accept(intList.get(i));
         }
-        assertTrue(mx.get().toInt() == 9);
+        assertEquals(9, mx.get().toInt());
 
 
         AggregatorImpls.AggregableMax<Integer> reverse = new AggregatorImpls.AggregableMax<>();
@@ -103,17 +105,17 @@ public class AggregatorImplsTest {
             reverse.accept(intList.get(intList.size() - i - 1));
         }
         mx.combine(reverse);
-        assertTrue(mx.get().toInt() == 9);
+        assertEquals(9, mx.get().toInt());
     }
 
 
     @Test
-    public void AggregableRangeTest(){
+    public void aggregableRangeTest(){
         AggregatorImpls.AggregableRange<Integer> mx = new AggregatorImpls.AggregableRange<>();
         for (int i = 0; i < intList.size(); i++){
             mx.accept(intList.get(i));
         }
-        assertTrue(mx.get().toInt() == 8);
+        assertEquals(8, mx.get().toInt());
 
 
         AggregatorImpls.AggregableRange<Integer> reverse = new AggregatorImpls.AggregableRange<>();
@@ -121,16 +123,16 @@ public class AggregatorImplsTest {
             reverse.accept(intList.get(intList.size() - i - 1) + 9);
         }
         mx.combine(reverse);
-        assertTrue(mx.get().toInt() == 17);
+        assertEquals(17, mx.get().toInt());
     }
 
     @Test
-    public void AggregableMinTest(){
+    public void aggregableMinTest(){
         AggregatorImpls.AggregableMin<Integer> mn = new AggregatorImpls.AggregableMin<>();
         for (int i = 0; i < intList.size(); i++){
             mn.accept(intList.get(i));
         }
-        assertTrue(mn.get().toInt() == 1);
+        assertEquals(1, mn.get().toInt());
 
 
         AggregatorImpls.AggregableMin<Integer> reverse = new AggregatorImpls.AggregableMin<>();
@@ -138,16 +140,16 @@ public class AggregatorImplsTest {
             reverse.accept(intList.get(intList.size() - i - 1));
         }
         mn.combine(reverse);
-        assertTrue(mn.get().toInt() == 1);
+        assertEquals(1, mn.get().toInt());
     }
 
     @Test
-    public void AggregableSumTest(){
+    public void aggregableSumTest(){
         AggregatorImpls.AggregableSum<Integer> sm = new AggregatorImpls.AggregableSum<>();
         for (int i = 0; i < intList.size(); i++){
             sm.accept(intList.get(i));
         }
-        assertTrue(sm.get().toDouble() == 45D);
+        assertEquals(45, sm.get().toInt());
 
 
         AggregatorImpls.AggregableSum<Integer> reverse = new AggregatorImpls.AggregableSum<>();
@@ -155,18 +157,18 @@ public class AggregatorImplsTest {
             reverse.accept(intList.get(intList.size() - i - 1));
         }
         sm.combine(reverse);
-        assertTrue(sm.get().toDouble() == 90D);
+        assertEquals(90, sm.get().toInt());
     }
 
 
     @Test
-    public void AggregableMeanTest(){
+    public void aggregableMeanTest(){
         AggregatorImpls.AggregableMean<Integer> mn = new AggregatorImpls.AggregableMean<>();
         for (int i = 0; i < intList.size(); i++){
             mn.accept(intList.get(i));
         }
-        assertTrue(mn.getCount() == 9);
-        assertTrue(mn.get().toDouble() == 5D);
+        assertEquals(9l, (long) mn.getCount());
+        assertEquals(5D, mn.get().toDouble(), 0.001);
 
 
         AggregatorImpls.AggregableMean<Integer> reverse = new AggregatorImpls.AggregableMean<>();
@@ -174,12 +176,12 @@ public class AggregatorImplsTest {
             reverse.accept(intList.get(intList.size() - i - 1));
         }
         mn.combine(reverse);
-        assertTrue(mn.getCount() == 18);
-        assertTrue(mn.get().toDouble() == 5D);
+        assertEquals(18l, (long) mn.getCount());
+        assertEquals(5D, mn.get().toDouble(), 0.001);
     }
 
     @Test
-    public void AggregableStdDevTest(){
+    public void aggregableStdDevTest(){
         AggregatorImpls.AggregableStdDev<Integer> sd = new AggregatorImpls.AggregableStdDev<>();
         for (int i = 0; i < intList.size(); i++){
             sd.accept(intList.get(i));
@@ -187,16 +189,16 @@ public class AggregatorImplsTest {
         assertTrue(Math.abs(sd.get().toDouble() - 2.7386) < 0.0001);
 
 
-        AggregatorImpls.AggregableMean<Integer> reverse = new AggregatorImpls.AggregableMean<>();
+        AggregatorImpls.AggregableStdDev<Integer> reverse = new AggregatorImpls.AggregableStdDev<>();
         for (int i = 0; i < intList.size(); i++){
             reverse.accept(intList.get(intList.size() - i - 1));
         }
         sd.combine(reverse);
-        assertTrue(Math.abs(sd.get().toDouble() - 2.7386) < 0.0001);
+        assertTrue("" + sd.get().toDouble(), Math.abs(sd.get().toDouble() - 1.8787) < 0.0001);
     }
 
     @Test
-    public void AggregableVariance(){
+    public void aggregableVariance(){
         AggregatorImpls.AggregableVariance<Integer> sd = new AggregatorImpls.AggregableVariance<>();
         for (int i = 0; i < intList.size(); i++){
             sd.accept(intList.get(i));
@@ -204,16 +206,16 @@ public class AggregatorImplsTest {
         assertTrue(Math.abs(sd.get().toDouble() - 60D/8) < 0.0001);
 
 
-        AggregatorImpls.AggregableMean<Integer> reverse = new AggregatorImpls.AggregableMean<>();
+        AggregatorImpls.AggregableVariance<Integer> reverse = new AggregatorImpls.AggregableVariance<>();
         for (int i = 0; i < intList.size(); i++){
             reverse.accept(intList.get(intList.size() - i - 1));
         }
         sd.combine(reverse);
-        assertTrue(Math.abs(sd.get().toDouble() - 60D/8) < 0.0001);
+        assertTrue("" + sd.get().toDouble(), Math.abs(sd.get().toDouble() - 3.5294) < 0.0001);
     }
 
     @Test
-    public void AggregableUncorrectedStdDevTest(){
+    public void aggregableUncorrectedStdDevTest(){
         AggregatorImpls.AggregableUncorrectedStdDev<Integer> sd = new AggregatorImpls.AggregableUncorrectedStdDev<>();
         for (int i = 0; i < intList.size(); i++){
             sd.accept(intList.get(i));
@@ -221,17 +223,17 @@ public class AggregatorImplsTest {
         assertTrue(Math.abs(sd.get().toDouble() - 2.582) < 0.0001);
 
 
-        AggregatorImpls.AggregableMean<Integer> reverse = new AggregatorImpls.AggregableMean<>();
+        AggregatorImpls.AggregableUncorrectedStdDev<Integer> reverse = new AggregatorImpls.AggregableUncorrectedStdDev<>();
         for (int i = 0; i < intList.size(); i++){
             reverse.accept(intList.get(intList.size() - i - 1));
         }
         sd.combine(reverse);
-        assertTrue(Math.abs(sd.get().toDouble() - 2.582) < 0.0001);
+        assertTrue("" + sd.get().toDouble(), Math.abs(sd.get().toDouble() - 1.8257) < 0.0001);
     }
 
 
     @Test
-    public void AggregablePopulationVariance(){
+    public void aggregablePopulationVariance(){
         AggregatorImpls.AggregablePopulationVariance<Integer> sd = new AggregatorImpls.AggregablePopulationVariance<>();
         for (int i = 0; i < intList.size(); i++){
             sd.accept(intList.get(i));
@@ -239,50 +241,54 @@ public class AggregatorImplsTest {
         assertTrue(Math.abs(sd.get().toDouble() - 60D/9) < 0.0001);
 
 
-        AggregatorImpls.AggregableMean<Integer> reverse = new AggregatorImpls.AggregableMean<>();
+        AggregatorImpls.AggregablePopulationVariance<Integer> reverse = new AggregatorImpls.AggregablePopulationVariance<>();
         for (int i = 0; i < intList.size(); i++){
             reverse.accept(intList.get(intList.size() - i - 1));
         }
         sd.combine(reverse);
-        assertTrue(Math.abs(sd.get().toDouble() - 60D/9) < 0.0001);
+        assertTrue("" + sd.get().toDouble(), Math.abs(sd.get().toDouble() - 30D/9) < 0.0001);
     }
 
     @Test
-    public void AggregableCountUniqueTest(){
+    public void aggregableCountUniqueTest(){
         // at this low range, it's linear counting
 
         AggregatorImpls.AggregableCountUnique<Integer> cu = new AggregatorImpls.AggregableCountUnique<>();
         for (int i = 0; i < intList.size(); i++){
             cu.accept(intList.get(i));
         }
-        assertTrue(cu.get().toInt() == 9);
+        assertEquals(9, cu.get().toInt());
         cu.accept(1);
-        assertTrue(cu.get().toInt() == 9);
+        assertEquals(9, cu.get().toInt());
 
         AggregatorImpls.AggregableCountUnique<Integer> reverse = new AggregatorImpls.AggregableCountUnique<>();
         for (int i = 0; i < intList.size(); i++){
             reverse.accept(intList.get(intList.size() - i - 1));
         }
         cu.combine(reverse);
-        assertTrue(cu.get().toInt() == 9);
+        assertEquals(9, cu.get().toInt());
     }
+
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
 
 
     @Test
-    public void IncompatibleAggregatorTest(){
+    public void incompatibleAggregatorTest(){
         AggregatorImpls.AggregableSum<Integer> sm = new AggregatorImpls.AggregableSum<>();
         for (int i = 0; i < intList.size(); i++){
             sm.accept(intList.get(i));
         }
-        assertTrue(sm.get().toInt() == 45D);
+        assertEquals(45, sm.get().toInt());
 
 
         AggregatorImpls.AggregableMean<Integer> reverse = new AggregatorImpls.AggregableMean<>();
         for (int i = 0; i < intList.size(); i++){
             reverse.accept(intList.get(intList.size() - i - 1));
         }
+        exception.expect(UnsupportedOperationException.class);
         sm.combine(reverse);
-        assertTrue(sm.get().toInt() == 45D);
+        assertEquals(45, sm.get().toInt());
     }
 
 }

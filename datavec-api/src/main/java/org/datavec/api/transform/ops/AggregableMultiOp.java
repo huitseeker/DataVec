@@ -34,13 +34,18 @@ public class AggregableMultiOp<T> implements IAggregableReduceOp<T, List<Writabl
     }
 
     public <U extends IAggregableReduceOp<T, List<Writable>>> void combine(U accu) {
-        if (accu instanceof AggregableMultiOp){
+        if (accu instanceof AggregableMultiOp) {
             AggregableMultiOp<T> accumulator = (AggregableMultiOp<T>) accu;
             List<IAggregableReduceOp<T, Writable>> otherAccumulators = accumulator.getOperations();
-            for (int i = 0; i < Math.min(operations.size(), otherAccumulators.size()); i++){
+            if (operations.size() != otherAccumulators.size())
+                throw new IllegalArgumentException("Tried to combine() incompatible " + this.getClass().getName()
+                        + " operators: received " + otherAccumulators.size() + " operations, expected " + operations.size());
+            for (int i = 0; i < operations.size(); i++) {
                 operations.get(i).combine(otherAccumulators.get(i));
             }
-        }
+        } else
+            throw new UnsupportedOperationException("Tried to combine() incompatible " + accu.getClass().getName() + " operator where "
+                    + this.getClass().getName() + " expected");
     }
 
     public List<Writable> get(){

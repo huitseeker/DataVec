@@ -23,6 +23,9 @@ public class DoubleWritableOp<T> implements IAggregableReduceOp<Writable, T> {
     public <W extends IAggregableReduceOp<Writable, T>> void combine(W accu) {
         if (accu instanceof DoubleWritableOp)
             operation.combine(((DoubleWritableOp) accu).getOperation());
+        else
+            throw new UnsupportedOperationException("Tried to combine() incompatible " + accu.getClass().getName() + " operator where "
+                    + this.getClass().getName() + " expected");
     }
 
     @Override

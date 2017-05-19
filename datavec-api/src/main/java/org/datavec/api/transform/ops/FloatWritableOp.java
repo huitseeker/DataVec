@@ -23,6 +23,9 @@ public class FloatWritableOp<T> implements IAggregableReduceOp<Writable, T> {
     public <W extends IAggregableReduceOp<Writable, T>> void combine(W accu) {
         if (accu instanceof FloatWritableOp)
             operation.combine(((FloatWritableOp) accu).getOperation());
+        else
+            throw new UnsupportedOperationException("Tried to combine() incompatible " + accu.getClass().getName() + " operator where "
+                    + this.getClass().getName() + " expected");
     }
 
     @Override

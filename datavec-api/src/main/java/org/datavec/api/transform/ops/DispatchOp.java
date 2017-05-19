@@ -12,8 +12,6 @@ import java.util.List;
  * {@link Writable} elements, in the form of a list of {@link Writable}. It produces a reduce operation that
  * distributes a list of {@link Writable} elements to these operations, one per operation.
  *
- * It is assumed that if you receive k {@link Writable} elements, you should have exactly k {@link IAggregableReduceOp}
- * operations to process them with. Any additional operations or elements (whichever is larger) will be ignored.
  *
  * Created by huitseeker on 5/14/17.
  */
@@ -29,10 +27,15 @@ public class DispatchOp<T, U> implements IAggregableReduceOp<List<T>, List<U>> {
     public <W extends IAggregableReduceOp<List<T>, List<U>>> void combine(W accu) {
         if (accu instanceof DispatchOp){
             List<IAggregableReduceOp<T, List<U>>> otherOps = ((DispatchOp<T, U>) accu).getOperations();
+            if (operations.size() != otherOps.size())
+                throw new IllegalArgumentException("Tried to combine() incompatible " + this.getClass().getName()
+                        + " operators: received " + otherOps.size() + " operations, expected " + operations.size());
             for (int i = 0; i < Math.min(operations.size(), otherOps.size()); i++){
                 operations.get(i).combine(otherOps.get(i));
             }
-        }
+        } else
+            throw new UnsupportedOperationException("Tried to combine() incompatible " + accu.getClass().getName() + " operator where "
+                    + this.getClass().getName() + " expected");
     }
 
     @Override

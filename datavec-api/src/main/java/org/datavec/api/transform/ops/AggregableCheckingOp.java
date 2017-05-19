@@ -32,7 +32,9 @@ public class AggregableCheckingOp<T> implements IAggregableReduceOp<Writable, T>
                         + accumulator.getMetaData().getName() + " of type " + accumulator.getMetaData().getColumnType()
                         + " expected " + metaData.getName() + " of type " + metaData.getColumnType());
             else operation.combine(accumulator);
-        }
+        } else
+            throw new UnsupportedOperationException("Tried to combine() incompatible " + accu.getClass().getName() + " operator where "
+                    + this.getClass().getName() + " expected");
     }
 
     @Override

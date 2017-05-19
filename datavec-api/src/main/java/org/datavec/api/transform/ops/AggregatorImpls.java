@@ -3,10 +3,8 @@ package org.datavec.api.transform.ops;
 import com.clearspring.analytics.stream.cardinality.CardinalityMergeException;
 import com.clearspring.analytics.stream.cardinality.HyperLogLogPlus;
 import lombok.Getter;
-import org.apache.commons.lang3.tuple.Pair;
+import lombok.NoArgsConstructor;
 import org.datavec.api.writable.*;
-
-import java.io.WriteAbortedException;
 
 /**
  * Created by huitseeker on 4/28/17.
@@ -25,6 +23,9 @@ public class AggregatorImpls {
         @Override
         public <W extends IAggregableReduceOp<T, Writable>> void combine(W accu) {
             // left-favoring for first
+            if (!(accu instanceof IAggregableReduceOp))
+                throw new UnsupportedOperationException("Tried to combine() incompatible " + accu.getClass().getName() + " operator where "
+                        + this.getClass().getName() + " expected");
         }
 
         @Override
@@ -47,6 +48,8 @@ public class AggregatorImpls {
         public <W extends IAggregableReduceOp<T, Writable>> void combine(W accu) {
             if (accu instanceof AggregableLast)
                 override = accu.get(); // right-favoring for last
+            else throw new UnsupportedOperationException("Tried to combine() incompatible " + accu.getClass().getName() + " operator where "
+                    + this.getClass().getName() + " expected");
         }
 
         @Override
@@ -60,48 +63,105 @@ public class AggregatorImpls {
 
     public static class AggregableSum<T extends Number> implements IAggregableReduceOp<T, Writable> {
 
-        private Double sum = 0D;
+        @Getter
+        private Number sum;
+        @Getter
+        private T initialElement; // this value is ignored and jut serves as a subtype indicator
+
+        private static <U extends Number> Number addNumbers(U a, U b) {
+            if(a instanceof Double || b instanceof Double) {
+                return new Double(a.doubleValue() + b.doubleValue());
+            } else if(a instanceof Float || b instanceof Float) {
+                return new Float(a.floatValue() + b.floatValue());
+            } else if(a instanceof Long || b instanceof Long) {
+                return new Long(a.longValue() + b.longValue());
+            } else {
+                return new Integer(a.intValue() + b.intValue());
+            }
+        }
 
         @Override
         public void accept(T element) {
-            if (element != null) sum = sum + element.doubleValue();
+            if (sum == null) {
+                sum = element;
+                initialElement = element;
+            }
+            else {
+                if (initialElement.getClass().isAssignableFrom(element.getClass()))
+                sum = addNumbers(sum, element);
+            }
         }
 
         @Override
         public <W extends IAggregableReduceOp<T, Writable>> void combine(W accu) {
-            if (accu instanceof AggregableSum)
-                sum = sum + accu.get().toDouble();
+            if (accu instanceof AggregableSum) {
+                AggregableSum<T> accumulator = (AggregableSum<T>) accu;
+                // the type of this now becomes that of the union of initialelement
+                if (accumulator.getInitialElement().getClass().isAssignableFrom(initialElement.getClass()))
+                    initialElement = accumulator.initialElement;
+                sum = addNumbers(sum, accumulator.getSum());
+            }
+            else
+                throw new UnsupportedOperationException("Tried to combine() incompatible " + accu.getClass().getName() + " operator where "
+                        + this.getClass().getName() + " expected");
         }
 
         @Override
         public Writable get() {
-            return new DoubleWritable(sum);
+            return UnsafeWritableInjector.inject(sum);
         }
     }
 
     public static class AggregableProd<T extends Number> implements IAggregableReduceOp<T, Writable> {
 
-        private Double prod = 1D;
+        @Getter
+        private Number prod;
+        @Getter
+        private T initialElement; // this value is ignored and jut serves as a subtype indicator
+
+        private static <U extends Number> Number multiplyNumbers(U a, U b) {
+            if(a instanceof Double || b instanceof Double) {
+                return new Double(a.doubleValue() * b.doubleValue());
+            } else if(a instanceof Float || b instanceof Float) {
+                return new Float(a.floatValue() * b.floatValue());
+            } else if(a instanceof Long || b instanceof Long) {
+                return new Long(a.longValue() * b.longValue());
+            } else {
+                return new Integer(a.intValue() * b.intValue());
+            }
+        }
 
         @Override
         public void accept(T element) {
-            if (element != null) prod = prod * element.doubleValue();
+            if (prod == null) {
+                prod = element;
+                initialElement = element;
+            }
+            else {
+                if (initialElement.getClass().isAssignableFrom(element.getClass()))
+                    prod = multiplyNumbers(prod, element);
+            }
         }
 
         @Override
         public <W extends IAggregableReduceOp<T, Writable>> void combine(W accu) {
-            if (accu instanceof AggregableProd)
-                prod = prod * accu.get().toDouble();
+            if (accu instanceof AggregableSum) {
+                AggregableSum<T> accumulator = (AggregableSum<T>) accu;
+                // the type of this now becomes that of the union of initialelement
+                if (accumulator.getInitialElement().getClass().isAssignableFrom(initialElement.getClass()))
+                    initialElement = accumulator.initialElement;
+                prod = multiplyNumbers(prod, accumulator.getSum());
+            }
+            else
+                throw new UnsupportedOperationException("Tried to combine() incompatible " + accu.getClass().getName() + " operator where "
+                        + this.getClass().getName() + " expected");
         }
 
         @Override
         public Writable get() {
-            return new DoubleWritable(prod);
+            return UnsafeWritableInjector.inject(prod);
         }
     }
-
-
-
 
     public static class AggregableMax<T extends Number & Comparable<T>> implements IAggregableReduceOp<T, Writable> {
 
@@ -117,6 +177,9 @@ public class AggregatorImpls {
         public <W extends IAggregableReduceOp<T, Writable>> void combine(W accu) {
             if (max == null || (accu instanceof AggregableMax && max.compareTo(((AggregableMax<T>) accu).getMax()) < 0))
                 max = ((AggregableMax<T>) accu).getMax();
+            else if (!(accu instanceof AggregableMax))
+                throw new UnsupportedOperationException("Tried to combine() incompatible " + accu.getClass().getName() + " operator where "
+                        + this.getClass().getName() + " expected");
         }
 
         @Override
@@ -138,8 +201,11 @@ public class AggregatorImpls {
 
         @Override
         public <W extends IAggregableReduceOp<T, Writable>> void combine(W accu) {
-            if (min == null || (accu instanceof AggregableMax && min.compareTo(((AggregableMin<T>) accu).getMin()) > 0))
+            if (min == null || (accu instanceof AggregableMin && min.compareTo(((AggregableMin<T>) accu).getMin()) > 0))
                 min = ((AggregableMin<T>) accu).getMin();
+            else if (!(accu instanceof AggregableMin))
+                throw new UnsupportedOperationException("Tried to combine() incompatible " + accu.getClass().getName() + " operator where "
+                        + this.getClass().getName() + " expected");
         }
 
         @Override
@@ -167,20 +233,23 @@ public class AggregatorImpls {
                 max = ((AggregableRange<T>) accu).getMax();
             if (min == null || (accu instanceof AggregableRange && min.compareTo(((AggregableRange<T>) accu).getMin()) > 0))
                 min = ((AggregableRange<T>) accu).getMin();
+            if (!(accu instanceof AggregableRange))
+                throw new UnsupportedOperationException("Tried to combine() incompatible " + accu.getClass().getName() + " operator where "
+                        + this.getClass().getName() + " expected");
         }
 
 
         @Override
         public Writable get() {
-            if (min instanceof Long)
+            if (min.getClass() == Long.class)
                 return UnsafeWritableInjector.inject(max.longValue() - min.longValue());
-            else if (min instanceof Integer)
+            else if (min.getClass() == Integer.class)
                 return UnsafeWritableInjector.inject(max.intValue() - min.intValue());
-            else if (min instanceof Float)
+            else if (min.getClass() == Float.class)
                 return UnsafeWritableInjector.inject(max.floatValue() - min.floatValue());
-            else if (min instanceof Double)
+            else if (min.getClass() == Double.class)
                 return UnsafeWritableInjector.inject(max.doubleValue() - min.doubleValue());
-            else if (min instanceof Byte)
+            else if (min.getClass() == Byte.class)
                 return UnsafeWritableInjector.inject(max.byteValue() - min.byteValue());
             else throw new IllegalArgumentException("Wrong type for Aggregable Range operation " + min.getClass().getName());
         }
@@ -200,6 +269,9 @@ public class AggregatorImpls {
         public <W extends IAggregableReduceOp<T, Writable>> void combine(W accu) {
             if (accu instanceof AggregableCount)
                 count = count + accu.get().toLong();
+            else
+                throw new UnsupportedOperationException("Tried to combine() incompatible " + accu.getClass().getName() + " operator where "
+                        + this.getClass().getName() + " expected");
         }
 
         @Override
@@ -233,7 +305,9 @@ public class AggregatorImpls {
                 Long newCount = count + cnt;
                 mean = (mean * count + (acc.get().toDouble() * cnt)) / newCount;
                 count = newCount;
-            }
+            } else
+                throw new UnsupportedOperationException("Tried to combine() incompatible " + acc.getClass().getName() + " operator where "
+                        + this.getClass().getName() + " expected");
         }
 
         public Writable get() {
@@ -274,7 +348,7 @@ public class AggregatorImpls {
         }
 
         public <U extends IAggregableReduceOp<T, Writable>> void combine(U acc) {
-            if (acc instanceof AggregableStdDev) {
+            if (this.getClass().isAssignableFrom(acc.getClass())) {
                 AggregableStdDev<T> accu = (AggregableStdDev <T>)acc;
 
                 Long totalCount = count + accu.getCount();
@@ -287,7 +361,9 @@ public class AggregatorImpls {
                 count = totalCount;
                 mean = totalMean;
                 variation = variation;
-            }
+            } else
+                throw new UnsupportedOperationException("Tried to combine() incompatible " + acc.getClass().getName() + " operator where "
+                        + this.getClass().getName() + " expected");
         }
 
         public Writable get() {
@@ -344,8 +420,8 @@ public class AggregatorImpls {
         }
 
         public <U extends IAggregableReduceOp<T, Writable>> void combine(U acc) {
-            if (acc instanceof AggregableStdDev) {
-                AggregableStdDev<T> accu = (AggregableStdDev<T>) acc;
+            if (this.getClass().isAssignableFrom(acc.getClass())) {
+                AggregableVariance<T> accu = (AggregableVariance<T>) acc;
 
                 Long totalCount = count + accu.getCount();
                 Double totalMean =
@@ -357,7 +433,9 @@ public class AggregatorImpls {
                 count = totalCount;
                 mean = totalMean;
                 variation = variation;
-            }
+            } else
+                throw new UnsupportedOperationException("Tried to combine() incompatible " + acc.getClass().getName() + " operator where "
+                        + this.getClass().getName() + " expected");
         }
 
         public Writable get() {
@@ -393,11 +471,16 @@ public class AggregatorImpls {
      * and increase accuracy when the cardinality is small.
      * @param <T>
      */
+    @NoArgsConstructor
     public static class AggregableCountUnique<T> implements IAggregableReduceOp<T, Writable> {
 
-        private Float p = 0.05F;
+        private float p = 0.05f;
         @Getter
         private HyperLogLogPlus hll = new HyperLogLogPlus((int) Math.ceil(2.0 * Math.log(1.054 / p) / Math.log(2)), 0);
+
+        public AggregableCountUnique(float precision){
+            this.p = precision;
+        }
 
         @Override
         public void accept(T element) {
@@ -412,7 +495,9 @@ public class AggregatorImpls {
                 } catch (CardinalityMergeException e) {
                     throw new RuntimeException(e);
                 }
-            }
+            } else
+                throw new UnsupportedOperationException("Tried to combine() incompatible " + acc.getClass().getName() + " operator where "
+                        + this.getClass().getName() + " expected");
         }
 
         @Override

@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.reduce;
 
+import com.clearspring.analytics.util.Preconditions;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -36,10 +37,10 @@ import java.util.*;
 /**
  * A MultiOpReducer is used to take a set of examples and reduce them.
  * The idea: suppose you have a large number of columns, and you want to combine/reduce the values in each column.<br>
- * StringReducer allows you to specify different reductions for differently for different columns: min, max, sum, mean etc.
+ * MultiOpReducer allows you to specify different reductions for differently for different columns: min, max, sum, mean etc.
  * See {@link Builder} and {@link ReduceOp} for the full list.<br>
  * Note this supports executing multipe reducitons per column: simply call the Builder with Xcolumn() repeatedly
- * on the same column.
+ * on the same column, or use {@link org.datavec.api.transform.reduce.MultiOpReducer.Builder.multipleOpColumns}
  * <p>
  * Uses are:
  * (1) Reducing examples by a key
@@ -134,8 +135,11 @@ public class MultiOpReducer implements IAssociativeReducer {
             if (conditionalReductions != null && conditionalReductions.containsKey(name)) {
                 ConditionalReduction reduction = conditionalReductions.get(name);
 
-                String outName = reduction.getOutputName();
-                for (ReduceOp red: reduction.getReductions()){
+                List<String> outNames = reduction.getOutputNames();
+                List<ReduceOp> reductions = reduction.getReductions();
+                for (int j = 0; j < reduction.getReductions().size(); j++){
+                    ReduceOp red = reductions.get(j);
+                    String outName = outNames.get(j);
                     ColumnMetaData m = getMetaForColumn(red, name, inMeta);
                     m.setName(outName);
                     newMeta.add(m);
@@ -176,9 +180,15 @@ public class MultiOpReducer implements IAssociativeReducer {
                 String outName = getOutNameForColumn(op, name);
                 //Issue with prod/sum: the input meta data restrictions probably won't hold. But the data _type_ should essentially remain the same
                 ColumnMetaData outMeta;
-                if (inMeta instanceof IntegerMetaData || inMeta instanceof LongMetaData || inMeta instanceof DoubleMetaData) {
+                if (inMeta instanceof IntegerMetaData)
+                    outMeta = new IntegerMetaData(outName);
+                else if (inMeta instanceof LongMetaData)
+                    outMeta = new LongMetaData(outName);
+                else if (inMeta instanceof FloatMetaData)
+                    outMeta = new FloatMetaData(outName);
+                else if (inMeta instanceof DoubleMetaData)
                     outMeta = new DoubleMetaData(outName);
-                } else { //Sum/Prod doesn't really make sense to sum other column types anyway...
+                else { //Sum/Prod doesn't really make sense to sum other column types anyway...
                     outMeta = inMeta;
                 }
                 outMeta.setName(outName);
@@ -340,6 +350,7 @@ public class MultiOpReducer implements IAssociativeReducer {
             return this;
         }
 
+        public Builder multipleOpColmumns(List<ReduceOp> ops, String... columns){ return addAll(ops, columns); }
         /**
          * Reduce the specified columns by taking the minimum value
          */
@@ -395,7 +406,7 @@ public class MultiOpReducer implements IAssociativeReducer {
             return add(ReduceOp.Variance, columns);
         }
         /**
-         * Reduce the specified columns by taking the standard deviation of the values
+         * Reduce the specified columns by taking the population variance of the values
          */
         public Builder populationVariance(String... columns) {
             return add(ReduceOp.PopulationVariance, columns);
@@ -469,8 +480,9 @@ public class MultiOpReducer implements IAssociativeReducer {
          * @param reductions  Reductions to execute
          * @param condition  Condition to use in the reductions
          */
-        public Builder conditionalReduction(String column, String outputName, List<ReduceOp> reductions, Condition condition) {
-            this.conditionalReductions.put(column, new ConditionalReduction(column, outputName, reductions, condition));
+        public Builder conditionalReduction(String column, List<String> outputNames, List<ReduceOp> reductions, Condition condition) {
+            Preconditions.checkArgument(outputNames.size() == reductions.size(), "Conditional reductions should provide names for every column");
+            this.conditionalReductions.put(column, new ConditionalReduction(column, outputNames, reductions, condition));
             return this;
         }
 
@@ -485,7 +497,7 @@ public class MultiOpReducer implements IAssociativeReducer {
          * @param condition  Condition to use in the reductions
          */
         public Builder conditionalReduction(String column, String outputName, ReduceOp reduction, Condition condition) {
-            this.conditionalReductions.put(column, new ConditionalReduction(column, outputName, Collections.singletonList(reduction), condition));
+            this.conditionalReductions.put(column, new ConditionalReduction(column, Collections.singletonList(outputName), Collections.singletonList(reduction), condition));
             return this;
         }
 
@@ -512,7 +524,7 @@ public class MultiOpReducer implements IAssociativeReducer {
     @Data
     public static class ConditionalReduction implements Serializable {
         private final String columnName;
-        private final String outputName;
+        private final List<String> outputNames;
         private final List<ReduceOp> reductions;
         private final Condition condition;
     }

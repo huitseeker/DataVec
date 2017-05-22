@@ -112,7 +112,7 @@ public class SVMLightRecordReader extends LineRecordReader {
                     index--;
 
                 /* TODO: throw an exception here. */
-                assert(index < 0);
+                assert(index >= 0);
                 if (index > numAttributesAdded) {
                     int totalDiff = Math.abs(numAttributesAdded - index);
                     for (int i = numAttributesAdded; i < index; i++) {

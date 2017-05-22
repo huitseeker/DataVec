@@ -98,7 +98,7 @@ public class LibSvmRecordReader extends LineRecordReader {
                 j = j - 1;
 
             /* TODO: throw an exception here. */
-            assert(j < 0);
+            assert(j >= 0);
 
             while (j != read) {
                 record.add(new DoubleWritable(0.0));

@@ -46,7 +46,7 @@ public class TestGeoReduction {
 
         Schema schema = new Schema.Builder().addColumnString("key").addColumnString("coord").build();
 
-        MultiOpReducer reducer = new MultiOpReducer.Builder(ReduceOp.Count).keyColumns("key")
+        Reducer reducer = new Reducer.Builder(ReduceOp.Count).keyColumns("key")
                         .customReduction("coord", new CoordinatesReduction("coordSum", ReduceOp.Sum, "#")).build();
 
         reducer.setInputSchema(schema);

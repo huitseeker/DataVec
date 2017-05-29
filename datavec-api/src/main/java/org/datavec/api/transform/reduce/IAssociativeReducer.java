@@ -16,7 +16,6 @@
 
 package org.datavec.api.transform.reduce;
 
-import org.datavec.api.transform.ops.AggregableMultiOp;
 import org.datavec.api.transform.ops.IAggregableReduceOp;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.Writable;
@@ -34,7 +33,7 @@ import java.util.List;
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
-@JsonSubTypes(value = {@JsonSubTypes.Type(value = MultiOpReducer.class, name = "MultiOpReducer")})
+@JsonSubTypes(value = {@JsonSubTypes.Type(value = Reducer.class, name = "Reducer")})
 public interface IAssociativeReducer extends Serializable {
 
     /**

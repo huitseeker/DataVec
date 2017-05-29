@@ -18,7 +18,7 @@ package org.datavec.api.transform.transform;
 
 import org.datavec.api.transform.*;
 import org.datavec.api.transform.reduce.IAssociativeReducer;
-import org.datavec.api.transform.reduce.MultiOpReducer;
+import org.datavec.api.transform.reduce.Reducer;
 import org.datavec.api.transform.schema.SequenceSchema;
 import org.datavec.api.transform.sequence.ReduceSequenceTransform;
 import org.datavec.api.transform.sequence.trim.SequenceTrimTransform;
@@ -1088,7 +1088,7 @@ public class TestTransforms {
                 .addColumnsDouble("col%d",0,2)
                 .build();
 
-        IAssociativeReducer reducer = new MultiOpReducer.Builder(ReduceOp.Mean)
+        IAssociativeReducer reducer = new Reducer.Builder(ReduceOp.Mean)
                 .countColumns("col1")
                 .maxColumn("col2")
                 .build();

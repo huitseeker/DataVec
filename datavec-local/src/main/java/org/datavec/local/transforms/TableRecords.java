@@ -1,6 +1,5 @@
 package org.datavec.local.transforms;
 
-import com.sun.org.apache.xpath.internal.operations.Mult;
 import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
 import it.unimi.dsi.fastutil.floats.FloatArrayList;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
@@ -11,7 +10,7 @@ import org.datavec.api.transform.condition.column.*;
 import org.datavec.api.transform.filter.ConditionFilter;
 import org.datavec.api.transform.filter.Filter;
 import org.datavec.api.transform.rank.CalculateSortedRank;
-import org.datavec.api.transform.reduce.MultiOpReducer;
+import org.datavec.api.transform.reduce.Reducer;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.Writable;
@@ -85,7 +84,7 @@ public class TableRecords {
                                 "Tables don't have a time series sequence, please use the List<Writable> version of this function for input");
 
             } else if (dataAction.getReducer() != null) {
-                ret = reduce(ret, (MultiOpReducer) dataAction.getReducer());
+                ret = reduce(ret, (Reducer) dataAction.getReducer());
             } else if (dataAction.getSequenceSplit() != null) {
                 throw new UnsupportedOperationException(
                                 "Tables don't have a time series sequence, please use the List<Writable> version of this function for input");
@@ -133,10 +132,10 @@ public class TableRecords {
      * @param reducer the reducer to run
      * @return
      */
-    public static Table reduce(Table reduce, MultiOpReducer reducer) {
+    public static Table reduce(Table reduce, Reducer reducer) {
 
         if (reducer.getConditionalReductions() != null) {
-            for (Map.Entry<String, MultiOpReducer.ConditionalReduction> pair : reducer.getConditionalReductions().entrySet()) {
+            for (Map.Entry<String, Reducer.ConditionalReduction> pair : reducer.getConditionalReductions().entrySet()) {
                 Condition conditionToFilter = pair.getValue().getCondition();
                 String inputColumnName = pair.getKey();
                 Schema output = reducer.transform(reducer.getInputSchema());

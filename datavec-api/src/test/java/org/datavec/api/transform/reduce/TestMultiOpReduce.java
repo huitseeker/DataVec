@@ -21,16 +21,13 @@ import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.ReduceOp;
 import org.datavec.api.transform.condition.Condition;
 import org.datavec.api.transform.condition.ConditionOp;
-import org.datavec.api.transform.condition.column.ColumnCondition;
 import org.datavec.api.transform.condition.column.StringColumnCondition;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.metadata.StringMetaData;
 import org.datavec.api.transform.ops.AggregableMultiOp;
-import org.datavec.api.transform.ops.DispatchOp;
 import org.datavec.api.transform.ops.IAggregableReduceOp;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.*;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.*;
@@ -68,7 +65,7 @@ public class TestMultiOpReduce {
 
             Schema schema = new Schema.Builder().addColumnString("key").addColumnDouble("column").build();
 
-            MultiOpReducer reducer = new MultiOpReducer.Builder(op).keyColumns("key").build();
+            Reducer reducer = new Reducer.Builder(op).keyColumns("key").build();
 
             reducer.setInputSchema(schema);
             IAggregableReduceOp<List<Writable>, List<Writable>> accumulator = reducer.aggregableReducer();
@@ -112,7 +109,7 @@ public class TestMultiOpReduce {
 
             Schema schema = new Schema.Builder().addColumnString("key").addColumnInteger("column").build();
 
-            MultiOpReducer reducer = new MultiOpReducer.Builder(op).keyColumns("key").build();
+            Reducer reducer = new Reducer.Builder(op).keyColumns("key").build();
 
             reducer.setInputSchema(schema);
             IAggregableReduceOp<List<Writable>, List<Writable>> accumulator = reducer.aggregableReducer();
@@ -149,7 +146,7 @@ public class TestMultiOpReduce {
 
             Schema schema = new Schema.Builder().addColumnString("key").addColumnsString("column").build();
 
-            MultiOpReducer reducer = new MultiOpReducer.Builder(op).keyColumns("key").build();
+            Reducer reducer = new Reducer.Builder(op).keyColumns("key").build();
 
             reducer.setInputSchema(schema);
             IAggregableReduceOp<List<Writable>, List<Writable>> accumulator = reducer.aggregableReducer();
@@ -195,7 +192,7 @@ public class TestMultiOpReduce {
         for (ReduceOp op : exp.keySet()) {
             Schema schema = new Schema.Builder().addColumnString("key").addColumnInteger("column").build();
 
-            MultiOpReducer reducer = new MultiOpReducer.Builder(op).keyColumns("key").setIgnoreInvalid("column").build();
+            Reducer reducer = new Reducer.Builder(op).keyColumns("key").setIgnoreInvalid("column").build();
 
             reducer.setInputSchema(schema);
 
@@ -220,7 +217,7 @@ public class TestMultiOpReduce {
 
             Schema schema = new Schema.Builder().addColumnString("key").addColumnInteger("column").build();
 
-            MultiOpReducer reducer = new MultiOpReducer.Builder(op).keyColumns("key").build();
+            Reducer reducer = new Reducer.Builder(op).keyColumns("key").build();
             reducer.setInputSchema(schema);
             IAggregableReduceOp<List<Writable>, List<Writable>> accu = reducer.aggregableReducer();
 
@@ -254,7 +251,7 @@ public class TestMultiOpReduce {
         Schema schema = new Schema.Builder().addColumnString("key").addColumnInteger("intCol")
                         .addColumnString("textCol").addColumnString("doubleCol").build();
 
-        MultiOpReducer reducer = new MultiOpReducer.Builder(ReduceOp.Sum).keyColumns("key")
+        Reducer reducer = new Reducer.Builder(ReduceOp.Sum).keyColumns("key")
                         .customReduction("textCol", new CustomReduceTakeSecond())
                         .customReduction("doubleCol", new CustomReduceTakeSecond()).build();
 
@@ -434,7 +431,7 @@ public class TestMultiOpReduce {
 
         Condition condition = new StringColumnCondition("filterCol", ConditionOp.Equal, "a");
 
-        MultiOpReducer reducer = new MultiOpReducer.Builder(ReduceOp.Stdev).keyColumns("key")
+        Reducer reducer = new Reducer.Builder(ReduceOp.Stdev).keyColumns("key")
                         .conditionalReduction("intCol", "sumOfAs", ReduceOp.Sum, condition) //Sum, only where 'filterCol' == "a"
                         .countUniqueColumns("filterCol", "textCol").build();
 

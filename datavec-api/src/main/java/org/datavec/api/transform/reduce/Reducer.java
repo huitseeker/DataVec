@@ -35,12 +35,12 @@ import java.io.Serializable;
 import java.util.*;
 
 /**
- * A MultiOpReducer is used to take a set of examples and reduce them.
+ * A Reducer is used to take a set of examples and reduce them.
  * The idea: suppose you have a large number of columns, and you want to combine/reduce the values in each column.<br>
- * MultiOpReducer allows you to specify different reductions for differently for different columns: min, max, sum, mean etc.
+ * Reducer allows you to specify different reductions for differently for different columns: min, max, sum, mean etc.
  * See {@link Builder} and {@link ReduceOp} for the full list.<br>
  * Note this supports executing multipe reducitons per column: simply call the Builder with Xcolumn() repeatedly
- * on the same column, or use {@link org.datavec.api.transform.reduce.MultiOpReducer.Builder.multipleOpColumns}
+ * on the same column, or use {@link Reducer.Builder.multipleOpColumns}
  * <p>
  * Uses are:
  * (1) Reducing examples by a key
@@ -51,7 +51,7 @@ import java.util.*;
 @Data
 @JsonIgnoreProperties({"schema", "keyColumnsSet"})
 @EqualsAndHashCode(exclude = {"schema", "keyColumnsSet"})
-public class MultiOpReducer implements IAssociativeReducer {
+public class Reducer implements IAssociativeReducer {
 
     private Schema schema;
     private final List<String> keyColumns;
@@ -63,16 +63,16 @@ public class MultiOpReducer implements IAssociativeReducer {
 
     private Set<String> ignoreInvalidInColumns;
 
-    private MultiOpReducer(Builder builder) {
+    private Reducer(Builder builder) {
         this((builder.keyColumns == null ? null : Arrays.asList(builder.keyColumns)), builder.defaultOp, builder.opMap,
                         builder.customReductions, builder.conditionalReductions, builder.ignoreInvalidInColumns);
     }
 
-    public MultiOpReducer(@JsonProperty("keyColumns") List<String> keyColumns, @JsonProperty("defaultOp") ReduceOp defaultOp,
-                          @JsonProperty("opMap") Map<String, List<ReduceOp>> opMap,
-                          @JsonProperty("customReductions") Map<String, AggregableColumnReduction> customReductions,
-                          @JsonProperty("conditionalReductions") Map<String, ConditionalReduction> conditionalReductions,
-                          @JsonProperty("ignoreInvalidInColumns") Set<String> ignoreInvalidInColumns) {
+    public Reducer(@JsonProperty("keyColumns") List<String> keyColumns, @JsonProperty("defaultOp") ReduceOp defaultOp,
+                   @JsonProperty("opMap") Map<String, List<ReduceOp>> opMap,
+                   @JsonProperty("customReductions") Map<String, AggregableColumnReduction> customReductions,
+                   @JsonProperty("conditionalReductions") Map<String, ConditionalReduction> conditionalReductions,
+                   @JsonProperty("ignoreInvalidInColumns") Set<String> ignoreInvalidInColumns) {
         this.keyColumns = keyColumns;
         this.keyColumnsSet = (keyColumns == null ? null : new HashSet<>(keyColumns));
         this.defaultOp = defaultOp;
@@ -514,8 +514,8 @@ public class MultiOpReducer implements IAssociativeReducer {
             return this;
         }
 
-        public MultiOpReducer build() {
-            return new MultiOpReducer(this);
+        public Reducer build() {
+            return new Reducer(this);
         }
     }
 

@@ -16,7 +16,7 @@
 
 package org.datavec.api.transform.sequence;
 
-import org.datavec.api.transform.reduce.MultiOpReducer;
+import org.datavec.api.transform.reduce.Reducer;
 import org.datavec.api.writable.*;
 import org.datavec.api.transform.ReduceOp;
 import org.datavec.api.transform.Transform;
@@ -65,7 +65,7 @@ public class TestReduceSequenceByWindowFunction {
 
 
         //Now: reduce by summing...
-        MultiOpReducer reducer = new MultiOpReducer.Builder(ReduceOp.Sum).takeFirstColumns("timecolumn").build();
+        Reducer reducer = new Reducer.Builder(ReduceOp.Sum).takeFirstColumns("timecolumn").build();
 
         Transform transform = new ReduceSequenceByWindowTransform(reducer, wf);
         transform.setInputSchema(schema);

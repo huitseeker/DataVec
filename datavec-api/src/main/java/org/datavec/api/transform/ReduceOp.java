@@ -17,7 +17,7 @@
 package org.datavec.api.transform;
 
 import org.datavec.api.transform.reduce.AggregableColumnReduction;
-import org.datavec.api.transform.reduce.MultiOpReducer;
+import org.datavec.api.transform.reduce.Reducer;
 
 /**ReduceOp defines the type of column reductions that can be used when reducing
  * a set of values to a single value.<br>
@@ -33,7 +33,7 @@ import org.datavec.api.transform.reduce.MultiOpReducer;
  * TakeFirst: Take the first possible  value in the list<br>
  * TakeLast: Take the last possible value in the list<br>
  *
- * <b>Note</b>: For custom reduction operations with {@link MultiOpReducer}
+ * <b>Note</b>: For custom reduction operations with {@link Reducer}
  * , use the {@link AggregableColumnReduction}
  * functionality.
  *

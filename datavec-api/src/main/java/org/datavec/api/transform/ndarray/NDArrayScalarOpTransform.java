@@ -45,8 +45,7 @@ public class NDArrayScalarOpTransform extends BaseColumnTransform {
      * @param scalar     Scalar value for the operation
      */
     public NDArrayScalarOpTransform(@JsonProperty("columnName") String columnName,
-                                    @JsonProperty("mathOp") MathOp mathOp,
-                                    @JsonProperty("scalar") double scalar) {
+                    @JsonProperty("mathOp") MathOp mathOp, @JsonProperty("scalar") double scalar) {
         super(columnName);
         this.mathOp = mathOp;
         this.scalar = scalar;

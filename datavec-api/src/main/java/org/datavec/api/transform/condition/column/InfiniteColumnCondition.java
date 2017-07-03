@@ -29,7 +29,7 @@ public class InfiniteColumnCondition extends BaseColumnCondition {
     /**
      * @param columnName Column check for the condition
      */
-    public InfiniteColumnCondition(String columnName){
+    public InfiniteColumnCondition(String columnName) {
         this(columnName, DEFAULT_SEQUENCE_CONDITION_MODE);
     }
 
@@ -48,7 +48,7 @@ public class InfiniteColumnCondition extends BaseColumnCondition {
 
     @Override
     public boolean condition(Object input) {
-        return Double.isInfinite(((Number)input).doubleValue());
+        return Double.isInfinite(((Number) input).doubleValue());
     }
 
     @Override

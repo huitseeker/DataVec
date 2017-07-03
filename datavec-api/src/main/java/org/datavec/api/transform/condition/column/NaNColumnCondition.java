@@ -29,7 +29,7 @@ public class NaNColumnCondition extends BaseColumnCondition {
     /**
      * @param columnName Name of the column to check the condition for
      */
-    public NaNColumnCondition(String columnName){
+    public NaNColumnCondition(String columnName) {
         this(columnName, DEFAULT_SEQUENCE_CONDITION_MODE);
     }
 
@@ -48,7 +48,7 @@ public class NaNColumnCondition extends BaseColumnCondition {
 
     @Override
     public boolean condition(Object input) {
-        return Double.isNaN(((Number)input).doubleValue());
+        return Double.isNaN(((Number) input).doubleValue());
     }
 
     @Override

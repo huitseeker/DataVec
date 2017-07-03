@@ -86,7 +86,7 @@ public class NDArrayMetaData extends BaseColumnMetaData {
 
     @Override
     public boolean isValid(Object input) {
-        if(input == null) {
+        if (input == null) {
             return false;
         } else if (input instanceof Writable) {
             return isValid((Writable) input);

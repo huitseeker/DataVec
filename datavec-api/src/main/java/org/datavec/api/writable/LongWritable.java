@@ -60,14 +60,20 @@ public class LongWritable implements WritableComparable {
 
     /** Returns true iff <code>o</code> is a LongWritable with the same value. */
     public boolean equals(Object o) {
-        if (!(o instanceof LongWritable))
-            return false;
-        LongWritable other = (LongWritable) o;
-        return this.value == other.value;
+        if (o instanceof LongWritable){
+            LongWritable other = (LongWritable) o;
+            return this.value == other.get();
+        }
+        if (o instanceof IntWritable){
+            IntWritable other = (IntWritable) o;
+            return this.value == other.get();
+        }
+        else { return false; }
     }
 
     public int hashCode() {
-        return (int) value;
+        // Defer to the long hashCode, which collides with integer hashCodes on relevant values
+        return Long.valueOf(value).hashCode();
     }
 
     /** Compares two LongWritables. */
@@ -133,4 +139,5 @@ public class LongWritable implements WritableComparable {
     public WritableType getType() {
         return WritableType.Long;
     }
+
 }

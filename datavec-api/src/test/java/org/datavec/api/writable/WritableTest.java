@@ -6,6 +6,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 
 public class WritableTest {
 
@@ -28,7 +30,24 @@ public class WritableTest {
 
     @Test
     public void testIntLongWritable() {
-        assertEquals(new IntWritable(1), new LongWritable(1));
-        assertEquals(new LongWritable(1), new IntWritable(1));
+        assertEquals(new IntWritable(1), new LongWritable(1l));
+        assertEquals(new LongWritable(2l), new IntWritable(2));
+
+        long l = 1L << 34;
+        // those would cast to the same Int
+        assertNotEquals(new LongWritable(l), new IntWritable(4));
+    }
+
+
+    @Test
+    public void testDoubleFloatWritable(){
+        assertEquals(new DoubleWritable(1d), new FloatWritable(1f));
+        assertEquals(new FloatWritable(2f), new DoubleWritable(2d));
+
+        // we defer to Java equality for Floats
+        assertNotEquals(new DoubleWritable(1.1d), new FloatWritable(1.1f));
+        // same idea as above
+        assertNotEquals(new DoubleWritable(1.1d), new FloatWritable((float)1.1d));
+
     }
 }

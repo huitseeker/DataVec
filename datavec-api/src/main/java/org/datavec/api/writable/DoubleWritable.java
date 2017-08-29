@@ -65,15 +65,22 @@ public class DoubleWritable implements WritableComparable {
      * Returns true iff <code>o</code> is a DoubleWritable with the same value.
      */
     public boolean equals(Object o) {
-        if (!(o instanceof DoubleWritable)) {
+        if (o instanceof  DoubleWritable){
+            DoubleWritable other = (DoubleWritable) o;
+            return this.value == other.value;
+        }
+        if (o instanceof FloatWritable){
+            FloatWritable other = (FloatWritable) o;
+            float thisFloat = (float) this.value;
+            return (this.value == thisFloat && other.get() == thisFloat);
+        } else {
             return false;
         }
-        DoubleWritable other = (DoubleWritable) o;
-        return this.value == other.value;
     }
 
     public int hashCode() {
-        return (int) Double.doubleToLongBits(value);
+        // defer to the Double hashCode, which does a Double.doubleTolongBits(value).hashCode() behind the scenes
+        return Double.valueOf(value).hashCode();
     }
 
     public int compareTo(Object o) {

@@ -5,9 +5,7 @@ import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.*;
 
 public class WritableTest {
 
@@ -61,6 +59,19 @@ public class WritableTest {
         assertNotEquals(new DoubleWritable(1.1d), new FloatWritable(1.1f));
         // same idea as above
         assertNotEquals(new DoubleWritable(1.1d), new FloatWritable((float)1.1d));
+
+    }
+
+
+    @Test
+    public void testFuzzies(){
+        assertTrue(new DoubleWritable(1.1d).fuzzyEquals(new FloatWritable(1.1f), 1e-6d));
+        assertTrue(new FloatWritable(1.1f).fuzzyEquals(new DoubleWritable(1.1d), 1e-6d));
+        byte b = 0xfffffffe;
+        assertTrue(new ByteWritable(b).fuzzyEquals(new DoubleWritable(-2.0), 1e-6d));
+        assertFalse(new IntWritable(1).fuzzyEquals(new FloatWritable(1.1f), 1e-2d));
+        assertTrue(new IntWritable(1).fuzzyEquals(new FloatWritable(1.05f), 1e-1d));
+        assertTrue(new LongWritable(1).fuzzyEquals(new DoubleWritable(1.05f), 1e-1d));
 
     }
 }

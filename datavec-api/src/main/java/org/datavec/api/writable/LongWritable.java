@@ -60,6 +60,10 @@ public class LongWritable implements WritableComparable {
 
     /** Returns true iff <code>o</code> is a LongWritable with the same value. */
     public boolean equals(Object o) {
+        if (o instanceof ByteWritable){
+            ByteWritable other = (ByteWritable) o;
+            return this.value == other.get();
+        }
         if (o instanceof LongWritable){
             LongWritable other = (LongWritable) o;
             return this.value == other.get();

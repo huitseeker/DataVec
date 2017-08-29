@@ -29,6 +29,19 @@ public class WritableTest {
     }
 
     @Test
+    public void testByteWritable() {
+        byte b = 0xfffffffe;
+        assertEquals(new IntWritable(-2), new ByteWritable(b));
+        assertEquals(new LongWritable(-2), new ByteWritable(b));
+        assertEquals(new ByteWritable(b), new IntWritable(-2));
+        assertEquals(new ByteWritable(b), new LongWritable(-2));
+
+        // those would cast to the same Int
+        byte minus126 = 0xffffff82;
+        assertNotEquals(new ByteWritable(minus126), new IntWritable(130));
+    }
+
+    @Test
     public void testIntLongWritable() {
         assertEquals(new IntWritable(1), new LongWritable(1l));
         assertEquals(new LongWritable(2l), new IntWritable(2));

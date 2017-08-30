@@ -88,7 +88,7 @@ public class ByteWritable implements WritableComparable {
     }
 
     public int hashCode() {
-        return (int) value;
+        return (int)value;
     }
 
     /** Compares two ByteWritables. */

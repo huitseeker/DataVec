@@ -93,7 +93,7 @@ public class FloatWritable implements WritableComparable {
 
     public int hashCode() {
         // defer to Float.hashCode, which does what we mean for it to do
-        return Float.valueOf(value).hashCode();
+        return Float.floatToIntBits(value);
     }
 
     /** Compares two FloatWritables. */

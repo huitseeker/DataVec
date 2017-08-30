@@ -96,8 +96,8 @@ public class DoubleWritable implements WritableComparable {
     }
 
     public int hashCode() {
-        // defer to the Double hashCode, which does a Double.doubleTolongBits(value).hashCode() behind the scenes
-        return Double.valueOf(value).hashCode();
+        long var2 = Double.doubleToLongBits(value);
+        return (int)(var2 ^ var2 >>> 32);
     }
 
     public int compareTo(Object o) {

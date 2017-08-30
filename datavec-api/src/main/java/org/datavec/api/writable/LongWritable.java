@@ -93,8 +93,8 @@ public class LongWritable implements WritableComparable {
     }
 
     public int hashCode() {
-        // Defer to the long hashCode, which collides with integer hashCodes on relevant values
-        return Long.valueOf(value).hashCode();
+        // copy the long hashCode
+        return (int)(value ^ value >>> 32);
     }
 
     /** Compares two LongWritables. */

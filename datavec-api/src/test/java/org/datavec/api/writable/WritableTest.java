@@ -60,6 +60,7 @@ public class WritableTest {
         // same idea as above
         assertNotEquals(new DoubleWritable(1.1d), new FloatWritable((float)1.1d));
 
+        assertNotEquals(new DoubleWritable((double)Float.MAX_VALUE + 1), new FloatWritable(Float.POSITIVE_INFINITY));
     }
 
 

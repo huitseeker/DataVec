@@ -16,6 +16,7 @@
 
 package org.datavec.spark.transform.analysis.columns;
 
+import com.clearspring.analytics.stream.quantile.TDigest;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.apache.spark.util.StatCounter;
@@ -38,6 +39,8 @@ public class DoubleAnalysisCounter implements AnalysisCounter<DoubleAnalysisCoun
     private long countPositive = 0;
     private long countNegative = 0;
     private long countNaN = 0;
+    private TDigest digest = new TDigest(100);
+
 
     public DoubleAnalysisCounter() {};
 
@@ -97,6 +100,7 @@ public class DoubleAnalysisCounter implements AnalysisCounter<DoubleAnalysisCoun
             countNegative++;
         } ;
 
+        digest.add(value);
         counter.merge(value);
 
         return this;
@@ -127,8 +131,10 @@ public class DoubleAnalysisCounter implements AnalysisCounter<DoubleAnalysisCoun
             newCountMaxValue = countMaxValue;
         }
 
+        digest.add(other.getDigest());
+
         return new DoubleAnalysisCounter(counter.merge(other.getCounter()), countZero + other.getCountZero(),
                         newCountMinValue, newCountMaxValue, countPositive + other.getCountPositive(),
-                        countNegative + other.getCountNegative(), countNaN + other.getCountNaN());
+                        countNegative + other.getCountNegative(), countNaN + other.getCountNaN(), digest);
     }
 }

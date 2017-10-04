@@ -17,7 +17,7 @@
 package org.datavec.api.transform.analysis.columns;
 
 import lombok.Data;
-import com.clearspring.analytics.stream.quantile.TDigest;
+import com.tdunning.math.stats.TDigest;
 
 import java.util.ArrayList;
 import java.util.List;

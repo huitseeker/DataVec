@@ -73,7 +73,8 @@ public abstract class NumericalColumnAnalysis implements ColumnAnalysis {
         return "mean=" + mean + ",sampleStDev=" + sampleStdev + ",sampleVariance=" + sampleVariance + ",countZero="
                         + countZero + ",countNegative=" + countNegative + ",countPositive=" + countPositive
                         + ",countMinValue=" + countMinValue + ",countMaxValue=" + countMaxValue + ",count="
-                        + countTotal + ", quantiles=[" + quantiles.toString();
+                        + countTotal + ", quantiles=[" + quantiles.toString() +
+    "]";
     }
 
     public abstract double getMinDouble();
